@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import StudentDashboard from './StudentDashboard'
 import './App.css'
 
 /* ─────────────────────────────────────────
@@ -113,11 +114,41 @@ const ROLES = [
   { id: 'vendor',  label: 'Laundry Vendor', Icon: IconVendor  },
 ]
 
+/* Helper to resolve current route from window hash */
+function getRouteFromHash() {
+  const hash = window.location.hash.toLowerCase()
+  if (hash.includes('dashboard') || hash.includes('student')) {
+    return 'student-dashboard'
+  }
+  return 'login'
+}
+
 /* ─────────────────────────────────────────
-   App — login page
+   App — client-side routing & login
 ───────────────────────────────────────── */
 export default function App() {
-  /* ── form state ── */
+  /* Simple client-side routing */
+  const [currentRoute, setCurrentRoute] = useState(getRouteFromHash)
+  const [userEmail, setUserEmail] = useState('')
+
+  useEffect(() => {
+    function handleHashChange() {
+      setCurrentRoute(getRouteFromHash())
+    }
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [])
+
+  function navigateTo(route) {
+    if (route === 'student-dashboard') {
+      window.location.hash = '#/student/dashboard'
+    } else {
+      window.location.hash = '#/login'
+    }
+    setCurrentRoute(route)
+  }
+
+  /* ── login form state ── */
   const [role,         setRole]         = useState('student')
   const [email,        setEmail]        = useState('')
   const [password,     setPassword]     = useState('')
@@ -161,22 +192,39 @@ export default function App() {
     setLoading(true)
 
     try {
-      /* Simulated network round-trip — replace with real API call */
-      await new Promise(resolve => setTimeout(resolve, 1400))
+      /* Simulated network round-trip */
+      await new Promise(resolve => setTimeout(resolve, 800))
 
       /* Demo: surface error UI for a known bad credential */
       if (email.trim().toLowerCase() === 'fail@test.com') {
         throw new Error('Invalid email or password. Please try again.')
       }
 
-      /* Role verification happens server-side.
-         On success: redirect or update auth context here. */
+      /* On success: route student to the dashboard */
       console.log('Login intent:', { role, email: email.trim() })
+      setUserEmail(email.trim())
+
+      if (role === 'student') {
+        navigateTo('student-dashboard')
+      } else {
+        /* If vendor role is chosen, notify that vendor view will follow */
+        setServerError('Laundry Vendor portal will be available soon. Please select "Student" to preview the active dashboard.')
+      }
     } catch (err) {
       setServerError(err.message || 'Something went wrong. Please try again.')
     } finally {
       setLoading(false)
     }
+  }
+
+  /* If routed to Student Dashboard, render the dashboard component */
+  if (currentRoute === 'student-dashboard') {
+    return (
+      <StudentDashboard
+        userEmail={userEmail}
+        onSignOut={() => navigateTo('login')}
+      />
+    )
   }
 
   const roleLabel = ROLES.find(r => r.id === role)?.label ?? 'user'
