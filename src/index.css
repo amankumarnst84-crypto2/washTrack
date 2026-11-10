@@ -1,65 +1,64 @@
 /* ═══════════════════════════════════════════════════
-   WashTrack design tokens — warm off-white + sky-blue
-   These variables are the single source of truth for
-   every future page in this project.
+   WashTrack design tokens — light sky-blue theme
+   Light-only: no dark-mode overrides anywhere.
+   color-scheme: light forces the browser to use light
+   scrollbars/controls even on dark-mode systems.
 ═══════════════════════════════════════════════════ */
 :root {
-  /* Page & surface */
-  --bg:         #f4f1ec;   /* warm off-white — page background    */
-  --surface:    #ffffff;   /* card / input surface                */
-  --surface-2:  #f9f7f4;   /* slightly tinted surface variant     */
+  /* ── Page & surface ─────────────────────── */
+  --bg:        #eef6fc;   /* very light sky-blue page background  */
+  --surface:   #ffffff;   /* card & input surface                 */
+  --surface-2: #f5fafd;   /* slightly tinted surface variant      */
 
-  /* Illustration / accent panel */
-  --panel-bg:   #ddeef9;   /* light sky-blue panel                */
-  --panel-bg-2: #cce4f5;   /* deeper sky tint for gradients       */
+  /* ── Borders ────────────────────────────── */
+  --border:    #bdd8f0;   /* pale sky-blue border                 */
+  --border-2:  #d6ebf7;   /* softer secondary border              */
 
-  /* Borders */
-  --border:     #bdd8f0;   /* pale sky-blue border                */
-  --border-2:   #d8ebf8;   /* softer, secondary border            */
+  /* ── Text — dark navy scale ─────────────── */
+  --text:       #3d5a73;  /* body / secondary text                */
+  --text-h:     #0d2740;  /* headings, labels (dark navy)         */
+  --text-muted: #7a98b4;  /* placeholders / captions              */
 
-  /* Text — dark navy scale */
-  --text:       #4a6480;   /* body / secondary text               */
-  --text-h:     #0d2740;   /* headings, labels (dark navy)        */
-  --text-muted: #7a98b4;   /* placeholder / caption               */
-
-  /* Accent — sky blue */
+  /* ── Accent — sky blue ──────────────────── */
   --accent:        #3b9bd8;
   --accent-hover:  #2d87c2;
   --accent-bg:     rgba(59, 155, 216, 0.09);
   --accent-border: rgba(59, 155, 216, 0.42);
 
-  /* Status */
+  /* ── Status ─────────────────────────────── */
   --error:      #c0392b;
   --error-bg:   rgba(192, 57, 43, 0.08);
   --success:    #16a34a;
   --success-bg: rgba(22, 163, 74, 0.08);
 
-  /* Input */
+  /* ── Inputs ─────────────────────────────── */
   --input-bg:         #ffffff;
   --input-focus-ring: 0 0 0 3px rgba(59, 155, 216, 0.22);
 
-  /* Elevation */
+  /* ── Elevation ──────────────────────────── */
   --shadow:    rgba(13, 39, 64, 0.09) 0 12px 32px -6px,
-               rgba(13, 39, 64, 0.05) 0 4px 10px -2px;
-  --shadow-sm: rgba(13, 39, 64, 0.07) 0 2px 8px -1px;
+               rgba(13, 39, 64, 0.05) 0  4px 10px -2px;
+  --shadow-sm: rgba(13, 39, 64, 0.07) 0  2px  8px -1px;
 
-  /* Shape */
+  /* ── Shape ──────────────────────────────── */
   --radius-sm: 6px;
   --radius-md: 10px;
-  --radius-lg: 18px;
+  --radius-lg: 16px;
 
-  /* Misc compatibility tokens */
-  --code-bg:   #e8f3fc;
+  /* ── Misc compatibility tokens ──────────── */
+  --code-bg:   #e4f2fb;
   --social-bg: rgba(221, 238, 249, 0.5);
 
-  /* Typography */
+  /* ── Typography ─────────────────────────── */
   --sans:    system-ui, 'Segoe UI', Roboto, sans-serif;
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
   --mono:    ui-monospace, Consolas, monospace;
 
   font: 18px/145% var(--sans);
   letter-spacing: 0.18px;
-  color-scheme: light dark;
+  /* Force light colour-scheme so the browser never flips
+     scrollbars, form controls, or system colours to dark */
+  color-scheme: light;
   color: var(--text);
   background: var(--bg);
   font-synthesis: none;
@@ -72,33 +71,9 @@
   }
 }
 
-/* ── Dark mode overrides ── */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg:            #0c1c2c;
-    --surface:       #132030;
-    --surface-2:     #172638;
-    --panel-bg:      #152839;
-    --panel-bg-2:    #1a3248;
-    --border:        #1e3f5a;
-    --border-2:      #1a3248;
-    --text:          #7a9ab8;
-    --text-h:        #d4e9f8;
-    --text-muted:    #4e728e;
-    --accent:        #4fb3e8;
-    --accent-hover:  #62bfee;
-    --accent-bg:     rgba(79, 179, 232, 0.12);
-    --accent-border: rgba(79, 179, 232, 0.4);
-    --error:         #f87171;
-    --error-bg:      rgba(248, 113, 113, 0.1);
-    --input-bg:      #132030;
-    --input-focus-ring: 0 0 0 3px rgba(79, 179, 232, 0.25);
-    --shadow:    rgba(0, 0, 0, 0.45) 0 12px 32px -6px,
-                 rgba(0, 0, 0, 0.2)  0 4px 10px -2px;
-    --code-bg:   #1a3248;
-    --social-bg: rgba(21, 40, 57, 0.6);
-  }
-}
+/* NO prefers-color-scheme: dark block — this file is intentionally
+   light-only. Dark-mode support can be added in a future task when
+   the full design system is ready. */
 
 /* ── Reset & base ── */
 *,
@@ -109,12 +84,17 @@
 
 body {
   margin: 0;
+  /* Belt-and-suspenders: hard-pin background and text to light values
+     so the OS dark-mode media query cannot bleed through via the UA sheet. */
+  background: var(--bg);
+  color: var(--text);
 }
 
 #root {
   min-height: 100svh;
   display: flex;
   flex-direction: column;
+  background: var(--bg);
 }
 
 h1,
