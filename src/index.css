@@ -1,30 +1,61 @@
+/* ═══════════════════════════════════════════════════
+   WashTrack design tokens — warm off-white + sky-blue
+   These variables are the single source of truth for
+   every future page in this project.
+═══════════════════════════════════════════════════ */
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  /* Page & surface */
+  --bg:         #f4f1ec;   /* warm off-white — page background    */
+  --surface:    #ffffff;   /* card / input surface                */
+  --surface-2:  #f9f7f4;   /* slightly tinted surface variant     */
 
-  /* WashTrack extras */
-  --surface: #fafafa;
-  --error: #dc2626;
-  --error-bg: rgba(220, 38, 38, 0.08);
-  --success: #16a34a;
-  --input-bg: #fff;
-  --input-focus-ring: 0 0 0 3px rgba(170, 59, 255, 0.25);
+  /* Illustration / accent panel */
+  --panel-bg:   #ddeef9;   /* light sky-blue panel                */
+  --panel-bg-2: #cce4f5;   /* deeper sky tint for gradients       */
+
+  /* Borders */
+  --border:     #bdd8f0;   /* pale sky-blue border                */
+  --border-2:   #d8ebf8;   /* softer, secondary border            */
+
+  /* Text — dark navy scale */
+  --text:       #4a6480;   /* body / secondary text               */
+  --text-h:     #0d2740;   /* headings, labels (dark navy)        */
+  --text-muted: #7a98b4;   /* placeholder / caption               */
+
+  /* Accent — sky blue */
+  --accent:        #3b9bd8;
+  --accent-hover:  #2d87c2;
+  --accent-bg:     rgba(59, 155, 216, 0.09);
+  --accent-border: rgba(59, 155, 216, 0.42);
+
+  /* Status */
+  --error:      #c0392b;
+  --error-bg:   rgba(192, 57, 43, 0.08);
+  --success:    #16a34a;
+  --success-bg: rgba(22, 163, 74, 0.08);
+
+  /* Input */
+  --input-bg:         #ffffff;
+  --input-focus-ring: 0 0 0 3px rgba(59, 155, 216, 0.22);
+
+  /* Elevation */
+  --shadow:    rgba(13, 39, 64, 0.09) 0 12px 32px -6px,
+               rgba(13, 39, 64, 0.05) 0 4px 10px -2px;
+  --shadow-sm: rgba(13, 39, 64, 0.07) 0 2px 8px -1px;
+
+  /* Shape */
   --radius-sm: 6px;
   --radius-md: 10px;
-  --radius-lg: 16px;
+  --radius-lg: 18px;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  /* Misc compatibility tokens */
+  --code-bg:   #e8f3fc;
+  --social-bg: rgba(221, 238, 249, 0.5);
+
+  /* Typography */
+  --sans:    system-ui, 'Segoe UI', Roboto, sans-serif;
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  --mono:    ui-monospace, Consolas, monospace;
 
   font: 18px/145% var(--sans);
   letter-spacing: 0.18px;
@@ -41,27 +72,35 @@
   }
 }
 
+/* ── Dark mode overrides ── */
 @media (prefers-color-scheme: dark) {
   :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-    --surface: #1c1d26;
-    --error: #f87171;
-    --error-bg: rgba(248, 113, 113, 0.1);
-    --input-bg: #1f2028;
-    --input-focus-ring: 0 0 0 3px rgba(192, 132, 252, 0.3);
+    --bg:            #0c1c2c;
+    --surface:       #132030;
+    --surface-2:     #172638;
+    --panel-bg:      #152839;
+    --panel-bg-2:    #1a3248;
+    --border:        #1e3f5a;
+    --border-2:      #1a3248;
+    --text:          #7a9ab8;
+    --text-h:        #d4e9f8;
+    --text-muted:    #4e728e;
+    --accent:        #4fb3e8;
+    --accent-hover:  #62bfee;
+    --accent-bg:     rgba(79, 179, 232, 0.12);
+    --accent-border: rgba(79, 179, 232, 0.4);
+    --error:         #f87171;
+    --error-bg:      rgba(248, 113, 113, 0.1);
+    --input-bg:      #132030;
+    --input-focus-ring: 0 0 0 3px rgba(79, 179, 232, 0.25);
+    --shadow:    rgba(0, 0, 0, 0.45) 0 12px 32px -6px,
+                 rgba(0, 0, 0, 0.2)  0 4px 10px -2px;
+    --code-bg:   #1a3248;
+    --social-bg: rgba(21, 40, 57, 0.6);
   }
 }
 
+/* ── Reset & base ── */
 *,
 *::before,
 *::after {
@@ -81,7 +120,7 @@ body {
 h1,
 h2 {
   font-family: var(--heading);
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-h);
 }
 
