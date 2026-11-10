@@ -1,90 +1,45 @@
-/* ══════════════════════════════════════════════
-   WashTrack — Login page styles
-   Two-panel layout: visual (left) + form (right)
-══════════════════════════════════════════════ */
-
-/* ── Page wrapper ── */
+/* ─────────────────────────────────────────
+   Login page layout — centered single card
+───────────────────────────────────────── */
 .login-page {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 32px 20px;
+  padding: 32px 16px;
   background: var(--bg);
-
-  @media (max-width: 700px) {
-    padding: 0;
-    align-items: flex-start;
-  }
 }
 
-/* ── Outer card ── */
 .login-card {
-  display: flex;
   width: 100%;
-  max-width: 900px;
-  min-height: 560px;
+  max-width: 440px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  padding: 40px 36px 36px;
   box-shadow: var(--shadow);
+  box-sizing: border-box;
+}
 
-  @media (max-width: 700px) {
-    flex-direction: column;
-    max-width: 100%;
-    min-height: 100svh;
-    border-radius: 0;
-    border: none;
-    box-shadow: none;
+@media (max-width: 480px) {
+  .login-card {
+    padding: 30px 20px 24px;
+    border-radius: var(--radius-md);
   }
 }
 
-/* ════════════════════════════════════════
-   LEFT: Visual / illustration panel
-════════════════════════════════════════ */
-.login-visual-panel {
-  flex: 0 0 42%;
+/* ─────────────────────────────────────────
+   Brand header
+───────────────────────────────────────── */
+.login-brand {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 22px;
-  padding: 44px 32px 40px;
-
-  /* Gradient from panel-bg at top to panel-bg-2 at bottom */
-  background: linear-gradient(165deg, var(--panel-bg) 0%, var(--panel-bg-2) 100%);
-  border-right: 1px solid var(--border);
-
-  @media (max-width: 700px) {
-    flex: none;
-    padding: 32px 24px 28px;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-    gap: 16px;
-  }
-}
-
-/* SVG illustration */
-.clothesline-svg {
-  width: 100%;
-  max-width: 300px;
-  height: auto;
-  filter: drop-shadow(0 4px 12px rgba(13, 39, 64, 0.08));
-
-  @media (max-width: 700px) {
-    max-width: 240px;
-  }
-}
-
-/* Brand block inside visual panel */
-.visual-brand {
-  display: flex;
-  align-items: center;
   gap: 10px;
+  margin-bottom: 24px;
 }
 
-.visual-brand-icon {
+.login-brand-icon {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -94,102 +49,44 @@
   background: var(--accent);
   color: #fff;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(59, 155, 216, 0.4);
+  box-shadow: 0 2px 8px rgba(59, 155, 216, 0.35);
 }
 
-.visual-brand-icon svg {
+.login-brand-icon svg {
   width: 20px;
   height: 20px;
 }
 
-.visual-brand-name {
-  font-size: 24px;
-  font-weight: 800;
-  letter-spacing: -0.6px;
+.login-brand-name {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
   color: var(--text-h);
   line-height: 1;
 }
 
-.visual-tagline {
-  font-size: 14px;
-  line-height: 1.65;
-  color: var(--text);
-  text-align: center;
-  max-width: 220px;
-
-  @media (max-width: 700px) {
-    display: none; /* compact on mobile */
-  }
-}
-
-/* ════════════════════════════════════════
-   RIGHT: Form panel
-════════════════════════════════════════ */
-.login-form-panel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 48px 44px;
-  overflow-y: auto;
-
-  @media (max-width: 900px) {
-    padding: 40px 32px;
-  }
-
-  @media (max-width: 700px) {
-    padding: 32px 24px 40px;
-  }
-}
-
-/* Small brand row at the top of the form panel */
-.form-brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 36px;
-}
-
-.form-brand-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 7px;
-  background: var(--accent);
-  color: #fff;
-  flex-shrink: 0;
-  box-shadow: 0 1px 4px rgba(59, 155, 216, 0.35);
-}
-
-.form-brand-icon svg {
-  width: 16px;
-  height: 16px;
-}
-
-.form-brand-name {
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: -0.2px;
-  color: var(--text-h);
-}
-
-/* Headings */
-.form-heading {
-  font-size: 22px;
-  font-weight: 700;
+/* ─────────────────────────────────────────
+   Card headings
+───────────────────────────────────────── */
+.login-heading {
+  font-size: 20px;
+  font-weight: 600;
   color: var(--text-h);
   margin: 0 0 4px;
-  letter-spacing: -0.4px;
+  text-align: center;
+  letter-spacing: -0.3px;
 }
 
-.form-subheading {
+.login-subheading {
   font-size: 14px;
   color: var(--text);
-  margin: 0 0 26px;
+  margin: 0 0 24px;
+  text-align: center;
 }
 
-/* ── Role selector ── */
+/* ─────────────────────────────────────────
+   Role selector
+───────────────────────────────────────── */
 .role-selector {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -246,7 +143,9 @@
   color: var(--accent);
 }
 
-/* ── Error banner ── */
+/* ─────────────────────────────────────────
+   Error banner
+───────────────────────────────────────── */
 .error-banner {
   display: flex;
   align-items: flex-start;
@@ -268,7 +167,9 @@
   margin-top: 1px;
 }
 
-/* ── Form fields ── */
+/* ─────────────────────────────────────────
+   Form fields
+───────────────────────────────────────── */
 .form-fields {
   display: flex;
   flex-direction: column;
@@ -387,7 +288,9 @@
   flex-shrink: 0;
 }
 
-/* ── Submit button ── */
+/* ─────────────────────────────────────────
+   Submit button
+───────────────────────────────────────── */
 .submit-btn {
   width: 100%;
   padding: 11px 16px;
@@ -426,7 +329,9 @@
   cursor: not-allowed;
 }
 
-/* ── Loading spinner ── */
+/* ─────────────────────────────────────────
+   Loading spinner
+───────────────────────────────────────── */
 .spinner {
   width: 16px;
   height: 16px;
@@ -443,7 +348,9 @@
   }
 }
 
-/* ── Footer note ── */
+/* ─────────────────────────────────────────
+   Footer note
+───────────────────────────────────────── */
 .login-footer-note {
   font-size: 12px;
   color: var(--text-muted);
