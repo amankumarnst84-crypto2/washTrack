@@ -59,6 +59,17 @@ function IconLock() {
   )
 }
 
+function IconBag() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+      <line x1="3" y1="6" x2="21" y2="6" />
+      <path d="M16 10a4 4 0 0 1-8 0" />
+    </svg>
+  )
+}
+
 function IconEye({ off }) {
   return off ? (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
@@ -92,8 +103,13 @@ function IconAlert() {
 ───────────────────────────────────────── */
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-function validateForm({ email, password }) {
+function validateForm({ role, email, password, bagNo }) {
   const errors = {}
+  if (role === 'student') {
+    if (!bagNo.trim()) {
+      errors.bagNo = 'Laundry bag number is required.'
+    }
+  }
   if (!email.trim()) {
     errors.email = 'Email is required.'
   } else if (!EMAIL_RE.test(email.trim())) {
@@ -156,6 +172,7 @@ export default function App() {
 
   /* ── login form state ── */
   const [role,         setRole]         = useState('student')
+  const [bagNo,        setBagNo]        = useState('')
   const [email,        setEmail]        = useState('')
   const [password,     setPassword]     = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -166,6 +183,12 @@ export default function App() {
   const [loading,     setLoading]     = useState(false)
 
   /* Clear errors eagerly as the user types */
+  function handleBagNoChange(e) {
+    setBagNo(e.target.value)
+    if (serverError)        setServerError('')
+    if (fieldErrors.bagNo)  setFieldErrors(prev => ({ ...prev, bagNo: '' }))
+  }
+
   function handleEmailChange(e) {
     setEmail(e.target.value)
     if (serverError)        setServerError('')
@@ -181,13 +204,14 @@ export default function App() {
   function handleRoleChange(id) {
     setRole(id)
     setServerError('')
+    if (fieldErrors.bagNo)     setFieldErrors(prev => ({ ...prev, bagNo: '' }))
   }
 
   async function handleSubmit(e) {
     e.preventDefault()
 
     /* Frontend validation */
-    const errors = validateForm({ email, password })
+    const errors = validateForm({ role, email, password, bagNo })
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors)
       return
@@ -207,7 +231,11 @@ export default function App() {
       }
 
       /* On success: route user according to selected role */
-      console.log('Login intent:', { role, email: email.trim() })
+      console.log('Login intent:', {
+        role,
+        email: email.trim(),
+        ...(role === 'student' ? { bagNo: bagNo.trim() } : {}),
+      })
       setUserEmail(email.trim())
 
       if (role === 'student') {
@@ -291,6 +319,36 @@ export default function App() {
         {/* Form */}
         <form onSubmit={handleSubmit} noValidate>
           <div className="form-fields">
+
+            {/* Laundry Bag No. (Student only) */}
+            {role === 'student' && (
+              <div className="form-group">
+                <label className="form-label" htmlFor="bagNo">
+                  Laundry Bag No.
+                </label>
+                <div className="input-wrapper">
+                  <span className="input-icon"><IconBag /></span>
+                  <input
+                    id="bagNo"
+                    className={`form-input${fieldErrors.bagNo ? ' form-input--error' : ''}`}
+                    type="text"
+                    autoComplete="off"
+                    placeholder="e.g. G285 or B442"
+                    value={bagNo}
+                    onChange={handleBagNoChange}
+                    disabled={loading}
+                    aria-describedby={fieldErrors.bagNo ? 'bagNo-error' : undefined}
+                    aria-invalid={!!fieldErrors.bagNo}
+                  />
+                </div>
+                {fieldErrors.bagNo && (
+                  <span className="field-error" id="bagNo-error" role="alert">
+                    <IconAlert />
+                    {fieldErrors.bagNo}
+                  </span>
+                )}
+              </div>
+            )}
 
             {/* Email */}
             <div className="form-group">
