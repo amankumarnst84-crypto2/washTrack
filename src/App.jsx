@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import StudentDashboard from './StudentDashboard'
+import VendorDashboard from './VendorDashboard'
 import './App.css'
 
 /* ─────────────────────────────────────────
@@ -117,6 +118,9 @@ const ROLES = [
 /* Helper to resolve current route from window hash */
 function getRouteFromHash() {
   const hash = window.location.hash.toLowerCase()
+  if (hash.includes('vendor')) {
+    return 'vendor-dashboard'
+  }
   if (hash.includes('dashboard') || hash.includes('student')) {
     return 'student-dashboard'
   }
@@ -140,7 +144,9 @@ export default function App() {
   }, [])
 
   function navigateTo(route) {
-    if (route === 'student-dashboard') {
+    if (route === 'vendor-dashboard') {
+      window.location.hash = '#/vendor/dashboard'
+    } else if (route === 'student-dashboard') {
       window.location.hash = '#/student/dashboard'
     } else {
       window.location.hash = '#/login'
@@ -200,15 +206,14 @@ export default function App() {
         throw new Error('Invalid email or password. Please try again.')
       }
 
-      /* On success: route student to the dashboard */
+      /* On success: route user according to selected role */
       console.log('Login intent:', { role, email: email.trim() })
       setUserEmail(email.trim())
 
       if (role === 'student') {
         navigateTo('student-dashboard')
       } else {
-        /* If vendor role is chosen, notify that vendor view will follow */
-        setServerError('Laundry Vendor portal will be available soon. Please select "Student" to preview the active dashboard.')
+        navigateTo('vendor-dashboard')
       }
     } catch (err) {
       setServerError(err.message || 'Something went wrong. Please try again.')
@@ -217,7 +222,17 @@ export default function App() {
     }
   }
 
-  /* If routed to Student Dashboard, render the dashboard component */
+  /* If routed to Vendor Dashboard, render the vendor dashboard component */
+  if (currentRoute === 'vendor-dashboard') {
+    return (
+      <VendorDashboard
+        userEmail={userEmail}
+        onSignOut={() => navigateTo('login')}
+      />
+    )
+  }
+
+  /* If routed to Student Dashboard, render the student dashboard component */
   if (currentRoute === 'student-dashboard') {
     return (
       <StudentDashboard
