@@ -113,82 +113,87 @@ function IconInfo() {
   )
 }
 
-function IconLock() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-    </svg>
-  )
-}
+/* ─────────────────────────────────────────
+   Services definition
+   - Exactly one service per order
+   - Three categories: Washing, Dry-cleaning, Iron-only
+   - Dry-cleaning is optional and paid
+───────────────────────────────────────── */
+const SERVICES = [
+  {
+    id: 'Washing',
+    title: 'Washing',
+    badge: null,
+    description: 'Standard wash & fold service',
+  },
+  {
+    id: 'Dry-cleaning',
+    title: 'Dry-cleaning',
+    badge: 'Paid service',
+    description: 'Optional • Extra charges apply, confirmed at intake',
+  },
+  {
+    id: 'Iron-only',
+    title: 'Iron-only',
+    badge: null,
+    description: 'Pressing and ironing service only',
+  },
+]
 
 /* ─────────────────────────────────────────
    Initial Mock Orders
-   Rule: At most ONE uncollected order (Submitted,
-   Washing, or Ready) at any time. All other
-   past orders are marked Collected.
-   Categories: Washing, Dry-cleaning, Iron-only
+   Rule: Each order contains clothes for exactly ONE service.
+   Services can run simultaneously with independent statuses & completion times.
+   Example: Dry-cleaning can be Ready while washing is still Washing.
    No weights, detergents, wash methods, notes, or station info.
 ───────────────────────────────────────── */
 const INITIAL_ORDERS = [
   {
-    id: 'WT-4825',
-    services: [
-      { category: 'Washing', count: 10 },
-      { category: 'Dry-cleaning', count: 2 },
-      { category: 'Iron-only', count: 4 },
-    ],
+    id: 'WT-4832',
+    service: 'Dry-cleaning',
+    clothesCount: 3,
+    placedAt: 'Today, 9:00 AM',
+    timeline: 'Ready for collection',
+    status: 'Ready',
+  },
+  {
+    id: 'WT-4828',
+    service: 'Washing',
+    clothesCount: 12,
     placedAt: 'Today, 8:15 AM',
     timeline: 'Est. Ready: Today, 3:00 PM',
     status: 'Washing',
   },
   {
+    id: 'WT-4824',
+    service: 'Iron-only',
+    clothesCount: 6,
+    placedAt: 'Today, 10:30 AM',
+    timeline: 'Est. Ready: Today, 5:00 PM',
+    status: 'Submitted',
+  },
+  {
     id: 'WT-4814',
-    services: [
-      { category: 'Washing', count: 12 },
-    ],
+    service: 'Washing',
+    clothesCount: 14,
     placedAt: 'Nov 9, 2026, 9:00 AM',
     timeline: 'Collected: Nov 9, 2026',
     status: 'Collected',
   },
   {
     id: 'WT-4798',
-    services: [
-      { category: 'Washing', count: 8 },
-      { category: 'Iron-only', count: 5 },
-    ],
+    service: 'Iron-only',
+    clothesCount: 8,
     placedAt: 'Nov 6, 2026, 11:00 AM',
     timeline: 'Collected: Nov 7, 2026',
     status: 'Collected',
   },
   {
     id: 'WT-4782',
-    services: [
-      { category: 'Dry-cleaning', count: 4 },
-    ],
+    service: 'Dry-cleaning',
+    clothesCount: 4,
     placedAt: 'Nov 2, 2026, 2:30 PM',
     timeline: 'Collected: Nov 3, 2026',
-    status: 'Collected',
-  },
-  {
-    id: 'WT-4760',
-    services: [
-      { category: 'Washing', count: 14 },
-      { category: 'Iron-only', count: 6 },
-    ],
-    placedAt: 'Oct 28, 2026, 1:15 PM',
-    timeline: 'Collected: Oct 29, 2026',
-    status: 'Collected',
-  },
-  {
-    id: 'WT-4735',
-    services: [
-      { category: 'Dry-cleaning', count: 3 },
-      { category: 'Iron-only', count: 3 },
-    ],
-    placedAt: 'Oct 21, 2026, 10:00 AM',
-    timeline: 'Collected: Oct 22, 2026',
     status: 'Collected',
   },
 ]
@@ -199,18 +204,13 @@ export default function StudentDashboard({ userEmail, onSignOut }) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [orderNotice, setOrderNotice] = useState(null)
 
-  /* New Order Form State: Clothes count per category */
-  const [washingCount, setWashingCount] = useState(6)
-  const [dryCleaningCount, setDryCleaningCount] = useState(0)
-  const [ironOnlyCount, setIronOnlyCount] = useState(2)
+  /* New Order Form State: Exactly ONE service per order */
+  const [selectedService, setSelectedService] = useState('Washing')
+  const [clothesCount, setClothesCount] = useState(8)
   const [formError, setFormError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  /* Rule: Check for any active (uncollected) order */
-  const activeOrder = orders.find(o => o.status !== 'Collected')
-  const hasActiveOrder = Boolean(activeOrder)
-
-  /* Dynamic status counts */
+  /* Dynamic status counts across all tracked orders */
   const countSubmitted = orders.filter(o => o.status === 'Submitted').length
   const countWashing = orders.filter(o => o.status === 'Washing').length
   const countReady = orders.filter(o => o.status === 'Ready').length
@@ -220,19 +220,12 @@ export default function StudentDashboard({ userEmail, onSignOut }) {
     ? orders
     : orders.filter(o => o.status.toLowerCase() === activeFilter.toLowerCase())
 
-  /* Total clothes selected in order modal */
-  const totalClothes = Number(washingCount || 0) + Number(dryCleaningCount || 0) + Number(ironOnlyCount || 0)
-
   function handleCreateOrder(e) {
     e.preventDefault()
 
-    if (hasActiveOrder) {
-      setFormError('You already have an active order. New orders can only be placed once the current one is Collected.')
-      return
-    }
-
-    if (totalClothes <= 0) {
-      setFormError('Please enter at least 1 cloth in any category.')
+    const count = parseInt(clothesCount, 10)
+    if (!count || count <= 0) {
+      setFormError('Please enter at least 1 cloth for this order.')
       return
     }
 
@@ -240,21 +233,11 @@ export default function StudentDashboard({ userEmail, onSignOut }) {
     setIsSubmitting(true)
 
     setTimeout(() => {
-      const generatedId = `WT-${Math.floor(4830 + Math.random() * 90)}`
-      const services = []
-      if (Number(washingCount) > 0) {
-        services.push({ category: 'Washing', count: Number(washingCount) })
-      }
-      if (Number(dryCleaningCount) > 0) {
-        services.push({ category: 'Dry-cleaning', count: Number(dryCleaningCount) })
-      }
-      if (Number(ironOnlyCount) > 0) {
-        services.push({ category: 'Iron-only', count: Number(ironOnlyCount) })
-      }
-
+      const generatedId = `WT-${Math.floor(4835 + Math.random() * 90)}`
       const newOrder = {
         id: generatedId,
-        services,
+        service: selectedService,
+        clothesCount: count,
         placedAt: 'Just now',
         timeline: 'Est. Ready: Tomorrow, 12:00 PM',
         status: 'Submitted',
@@ -263,10 +246,8 @@ export default function StudentDashboard({ userEmail, onSignOut }) {
       setOrders(prev => [newOrder, ...prev])
       setIsSubmitting(false)
       setIsModalOpen(false)
-      setWashingCount(6)
-      setDryCleaningCount(0)
-      setIronOnlyCount(2)
-      setOrderNotice(`Order ${generatedId} created successfully!`)
+      setClothesCount(8)
+      setOrderNotice(`Order ${generatedId} (${selectedService}) submitted successfully!`)
 
       setTimeout(() => {
         setOrderNotice(null)
@@ -274,12 +255,12 @@ export default function StudentDashboard({ userEmail, onSignOut }) {
     }, 500)
   }
 
-  /* Simulation helper: mark active order as Collected to allow testing */
+  /* Simulation helper: mark an uncollected order as Collected */
   function handleMarkCollected(orderId) {
     setOrders(prev =>
       prev.map(o => (o.id === orderId ? { ...o, status: 'Collected', timeline: 'Collected: Just now' } : o))
     )
-    setOrderNotice(`Order ${orderId} marked as Collected. You can now place a new order!`)
+    setOrderNotice(`Order ${orderId} marked as Collected!`)
     setTimeout(() => {
       setOrderNotice(null)
     }, 5000)
@@ -332,38 +313,22 @@ export default function StudentDashboard({ userEmail, onSignOut }) {
           <div className="header-text">
             <h1 className="header-title">Student Laundry Dashboard</h1>
             <p className="header-subtitle">
-              Monitor your laundry batches, check live washing stages, and submit clothes for processing.
+              Monitor individual Washing, Dry-cleaning, and Iron-only orders. Each service is tracked independently with its own schedule.
             </p>
           </div>
           <div className="header-action">
             <button
               type="button"
               className="btn-new-order"
-              disabled={hasActiveOrder}
               onClick={() => {
-                if (!hasActiveOrder) {
-                  setFormError('')
-                  setIsModalOpen(true)
-                }
+                setFormError('')
+                setIsModalOpen(true)
               }}
-              title={
-                hasActiveOrder
-                  ? `Active order ${activeOrder.id} (${activeOrder.status}) is in progress. Only one active order allowed at a time.`
-                  : 'Submit a new laundry order'
-              }
+              title="Submit a new laundry order"
             >
-              {hasActiveOrder ? <IconLock /> : <IconPlus />}
+              <IconPlus />
               <span>New laundry order</span>
             </button>
-
-            {hasActiveOrder && (
-              <div className="order-limit-notice" role="note">
-                <span className="limit-badge">1 Order Limit</span>
-                <span className="limit-text">
-                  Order <strong>{activeOrder.id}</strong> is currently <strong>{activeOrder.status}</strong>. A new order can be submitted once this order is marked <strong>Collected</strong>.
-                </span>
-              </div>
-            )}
           </div>
         </section>
 
@@ -396,7 +361,7 @@ export default function StudentDashboard({ userEmail, onSignOut }) {
               <span className="card-icon" aria-hidden="true"><IconCheckCircle /></span>
             </div>
             <div className="card-count">{countReady}</div>
-            <div className="card-subtext">Available for collection</div>
+            <div className="card-subtext">Available for pickup</div>
           </div>
 
           {/* 4. Collected */}
@@ -463,15 +428,14 @@ export default function StudentDashboard({ userEmail, onSignOut }) {
                           <span className="order-id-badge">{order.id}</span>
                         </td>
                         <td className="col-service">
-                          <div className="service-details-list">
-                            {order.services.map(s => (
-                              <span key={s.category} className="service-category-item">
-                                <strong className="service-category-name">{s.category}:</strong>{' '}
-                                <span className="service-category-count">
-                                  {s.count} {s.count === 1 ? 'cloth' : 'clothes'}
-                                </span>
-                              </span>
-                            ))}
+                          <div className="service-details-row">
+                            <span className="service-name-text">
+                              <strong>{order.service}:</strong> {order.clothesCount}{' '}
+                              {order.clothesCount === 1 ? 'cloth' : 'clothes'}
+                            </span>
+                            {order.service === 'Dry-cleaning' && (
+                              <span className="paid-tag-small">Paid service</span>
+                            )}
                           </div>
                         </td>
                         <td className="col-date">
@@ -511,7 +475,7 @@ export default function StudentDashboard({ userEmail, onSignOut }) {
         </section>
       </main>
 
-      {/* ── Modal: Create New Laundry Order ── */}
+      {/* ── Modal: Create New Laundry Order (Exactly One Service per Order) ── */}
       {isModalOpen && (
         <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
           <div className="modal-card">
@@ -541,81 +505,62 @@ export default function StudentDashboard({ userEmail, onSignOut }) {
               )}
 
               <p className="modal-instructions">
-                Specify the number of clothes for each service category. Laundry bag: <strong>G285</strong>.
+                Each order contains clothes for <strong>one service only</strong>. Assigned bag: <strong>G285</strong>.
               </p>
 
-              <div className="modal-form-fields">
-                {/* 1. Washing */}
-                <div className="category-field-group">
-                  <div className="category-header">
-                    <label className="category-label" htmlFor="order-washing">
-                      Washing
-                    </label>
-                    <span className="category-hint">Standard wash & fold</span>
-                  </div>
-                  <div className="quantity-input-wrap">
-                    <input
-                      id="order-washing"
-                      type="number"
-                      min="0"
-                      max="100"
-                      className="category-input"
-                      value={washingCount}
-                      onChange={e => setWashingCount(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                    />
-                    <span className="quantity-unit">clothes</span>
-                  </div>
+              {/* Service Selection: One service only */}
+              <div className="form-section">
+                <label className="section-label">Select Service (Choose one)</label>
+                <div className="service-options-grid" role="radiogroup" aria-label="Select one service category">
+                  {SERVICES.map(srv => {
+                    const isSelected = selectedService === srv.id
+                    return (
+                      <div
+                        key={srv.id}
+                        role="radio"
+                        aria-checked={isSelected}
+                        tabIndex={0}
+                        className={`service-option-card${isSelected ? ' service-option-card--selected' : ''}`}
+                        onClick={() => setSelectedService(srv.id)}
+                        onKeyDown={e => {
+                          if (e.key === ' ' || e.key === 'Enter') {
+                            e.preventDefault()
+                            setSelectedService(srv.id)
+                          }
+                        }}
+                      >
+                        <div className="service-card-radio">
+                          <span className={`radio-dot${isSelected ? ' radio-dot--active' : ''}`} />
+                        </div>
+                        <div className="service-card-content">
+                          <div className="service-card-title-row">
+                            <span className="service-card-title">{srv.title}</span>
+                            {srv.badge && <span className="paid-tag">{srv.badge}</span>}
+                          </div>
+                          <span className="service-card-desc">{srv.description}</span>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
+              </div>
 
-                {/* 2. Dry-cleaning (Optional • Paid service) */}
-                <div className="category-field-group category-field-group--paid">
-                  <div className="category-header">
-                    <label className="category-label" htmlFor="order-drycleaning">
-                      Dry-cleaning
-                      <span className="paid-tag">Paid service</span>
-                    </label>
-                    <span className="category-hint">Optional • Extra charges apply, confirmed at counter</span>
-                  </div>
-                  <div className="quantity-input-wrap">
-                    <input
-                      id="order-drycleaning"
-                      type="number"
-                      min="0"
-                      max="100"
-                      className="category-input"
-                      value={dryCleaningCount}
-                      onChange={e => setDryCleaningCount(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                    />
-                    <span className="quantity-unit">clothes</span>
-                  </div>
-                </div>
-
-                {/* 3. Iron-only */}
-                <div className="category-field-group">
-                  <div className="category-header">
-                    <label className="category-label" htmlFor="order-iron">
-                      Iron-only
-                    </label>
-                    <span className="category-hint">Ironing and pressing only</span>
-                  </div>
-                  <div className="quantity-input-wrap">
-                    <input
-                      id="order-iron"
-                      type="number"
-                      min="0"
-                      max="100"
-                      className="category-input"
-                      value={ironOnlyCount}
-                      onChange={e => setIronOnlyCount(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                    />
-                    <span className="quantity-unit">clothes</span>
-                  </div>
-                </div>
-
-                {/* Total clothes summary */}
-                <div className="total-summary-card">
-                  <span className="total-label">Total Clothes:</span>
-                  <strong className="total-count">{totalClothes} {totalClothes === 1 ? 'cloth' : 'clothes'}</strong>
+              {/* Clothes Count Input */}
+              <div className="form-section">
+                <label className="section-label" htmlFor="order-clothes-count">
+                  Number of clothes for {selectedService}
+                </label>
+                <div className="clothes-input-row">
+                  <input
+                    id="order-clothes-count"
+                    type="number"
+                    min="1"
+                    max="100"
+                    className="single-category-input"
+                    value={clothesCount}
+                    onChange={e => setClothesCount(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                  />
+                  <span className="quantity-unit-label">clothes</span>
                 </div>
               </div>
 
@@ -630,9 +575,9 @@ export default function StudentDashboard({ userEmail, onSignOut }) {
                 <button
                   type="submit"
                   className="btn-modal-submit"
-                  disabled={isSubmitting || totalClothes <= 0}
+                  disabled={isSubmitting || !clothesCount || clothesCount <= 0}
                 >
-                  {isSubmitting ? 'Submitting…' : 'Submit Laundry Order'}
+                  {isSubmitting ? 'Submitting…' : `Submit ${selectedService} Order`}
                 </button>
               </div>
             </form>
