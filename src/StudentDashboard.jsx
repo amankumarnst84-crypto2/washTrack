@@ -140,11 +140,14 @@ const SERVICES = [
   },
 ]
 
+/* Quantity bounds per order */
+const MIN_CLOTHES = 1
+const MAX_CLOTHES = 15
+
 /* ─────────────────────────────────────────
    Initial Mock Orders
-   Rule: Each order contains clothes for exactly ONE service.
-   Services can run simultaneously with independent statuses & completion times.
-   Example: Dry-cleaning can be Ready while washing is still Washing.
+   Rule: Each order contains clothes for exactly ONE service (1–15 clothes).
+   Different services can be active simultaneously with independent statuses.
    No weights, detergents, wash methods, notes, or station info.
 ───────────────────────────────────────── */
 const INITIAL_ORDERS = [
@@ -204,7 +207,7 @@ export default function StudentDashboard({ userEmail, onSignOut }) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [orderNotice, setOrderNotice] = useState(null)
 
-  /* New Order Form State: Exactly ONE service per order */
+  /* New Order Form State: Exactly ONE service and 1–15 clothes */
   const [selectedService, setSelectedService] = useState('Washing')
   const [clothesCount, setClothesCount] = useState(8)
   const [formError, setFormError] = useState('')
@@ -220,12 +223,41 @@ export default function StudentDashboard({ userEmail, onSignOut }) {
     ? orders
     : orders.filter(o => o.status.toLowerCase() === activeFilter.toLowerCase())
 
+  /* Clothes counter validation helpers */
+  const parsedCount = parseInt(clothesCount, 10)
+  const isCountValid = !isNaN(parsedCount) && parsedCount >= MIN_CLOTHES && parsedCount <= MAX_CLOTHES
+  const isMaxReached = parsedCount === MAX_CLOTHES
+  const isOverMax = parsedCount > MAX_CLOTHES
+  const isUnderMin = parsedCount < MIN_CLOTHES && clothesCount !== ''
+
+  function handleDecrement() {
+    setFormError('')
+    setClothesCount(prev => Math.max(MIN_CLOTHES, (parseInt(prev, 10) || MIN_CLOTHES) - 1))
+  }
+
+  function handleIncrement() {
+    setFormError('')
+    setClothesCount(prev => Math.min(MAX_CLOTHES, (parseInt(prev, 10) || 0) + 1))
+  }
+
+  function handleQuantityChange(e) {
+    setFormError('')
+    const val = e.target.value
+    if (val === '') {
+      setClothesCount('')
+      return
+    }
+    const num = parseInt(val, 10)
+    if (!isNaN(num)) {
+      setClothesCount(num)
+    }
+  }
+
   function handleCreateOrder(e) {
     e.preventDefault()
 
-    const count = parseInt(clothesCount, 10)
-    if (!count || count <= 0) {
-      setFormError('Please enter at least 1 cloth for this order.')
+    if (!isCountValid) {
+      setFormError(`Each order must contain between ${MIN_CLOTHES} and ${MAX_CLOTHES} clothes.`)
       return
     }
 
@@ -237,7 +269,7 @@ export default function StudentDashboard({ userEmail, onSignOut }) {
       const newOrder = {
         id: generatedId,
         service: selectedService,
-        clothesCount: count,
+        clothesCount: parsedCount,
         placedAt: 'Just now',
         timeline: 'Est. Ready: Tomorrow, 12:00 PM',
         status: 'Submitted',
@@ -247,7 +279,7 @@ export default function StudentDashboard({ userEmail, onSignOut }) {
       setIsSubmitting(false)
       setIsModalOpen(false)
       setClothesCount(8)
-      setOrderNotice(`Order ${generatedId} (${selectedService}) submitted successfully!`)
+      setOrderNotice(`Order ${generatedId} (${selectedService} • ${parsedCount} ${parsedCount === 1 ? 'cloth' : 'clothes'}) submitted successfully!`)
 
       setTimeout(() => {
         setOrderNotice(null)
@@ -322,6 +354,7 @@ export default function StudentDashboard({ userEmail, onSignOut }) {
               className="btn-new-order"
               onClick={() => {
                 setFormError('')
+                setClothesCount(8)
                 setIsModalOpen(true)
               }}
               title="Submit a new laundry order"
@@ -475,7 +508,7 @@ export default function StudentDashboard({ userEmail, onSignOut }) {
         </section>
       </main>
 
-      {/* ── Modal: Create New Laundry Order (Exactly One Service per Order) ── */}
+      {/* ── Modal: Create New Laundry Order (One Service & 1–15 Clothes) ── */}
       {isModalOpen && (
         <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
           <div className="modal-card">
@@ -505,7 +538,7 @@ export default function StudentDashboard({ userEmail, onSignOut }) {
               )}
 
               <p className="modal-instructions">
-                Each order contains clothes for <strong>one service only</strong>. Assigned bag: <strong>G285</strong>.
+                Students submit one order at a time with <strong>1–15 clothes</strong> for a single service. Assigned bag: <strong>G285</strong>.
               </p>
 
               {/* Service Selection: One service only */}
@@ -545,23 +578,78 @@ export default function StudentDashboard({ userEmail, onSignOut }) {
                 </div>
               </div>
 
-              {/* Clothes Count Input */}
+              {/* Clothes Quantity Counter (Min 1, Max 15) */}
               <div className="form-section">
-                <label className="section-label" htmlFor="order-clothes-count">
-                  Number of clothes for {selectedService}
-                </label>
-                <div className="clothes-input-row">
-                  <input
-                    id="order-clothes-count"
-                    type="number"
-                    min="1"
-                    max="100"
-                    className="single-category-input"
-                    value={clothesCount}
-                    onChange={e => setClothesCount(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                  />
-                  <span className="quantity-unit-label">clothes</span>
+                <div className="quantity-header-row">
+                  <label className="section-label" htmlFor="order-clothes-count">
+                    Clothes Quantity
+                  </label>
+                  <span className="quantity-range-badge">Limit: 1 – 15 clothes</span>
                 </div>
+
+                <div className="clothes-counter-widget">
+                  <button
+                    type="button"
+                    className="counter-btn counter-btn--minus"
+                    onClick={handleDecrement}
+                    disabled={!parsedCount || parsedCount <= MIN_CLOTHES}
+                    title="Decrease count"
+                    aria-label="Decrease clothes count"
+                  >
+                    −
+                  </button>
+
+                  <div className="counter-input-wrap">
+                    <input
+                      id="order-clothes-count"
+                      type="number"
+                      min={MIN_CLOTHES}
+                      max={MAX_CLOTHES}
+                      className="counter-number-input"
+                      value={clothesCount}
+                      onChange={handleQuantityChange}
+                      aria-describedby="quantity-help"
+                    />
+                    <span className="counter-unit-text">
+                      {parsedCount === 1 ? 'cloth' : 'clothes'}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="counter-btn counter-btn--plus"
+                    onClick={handleIncrement}
+                    disabled={parsedCount >= MAX_CLOTHES}
+                    title="Increase count"
+                    aria-label="Increase clothes count"
+                  >
+                    +
+                  </button>
+                </div>
+
+                {/* Clear message when maximum is reached */}
+                {isMaxReached && (
+                  <div className="counter-limit-message" role="status">
+                    <IconInfo />
+                    <span>Maximum limit reached: Each order can contain at most 15 clothes.</span>
+                  </div>
+                )}
+
+                {/* Warning message if manually entered count exceeds maximum */}
+                {isOverMax && (
+                  <div className="counter-limit-message counter-limit-message--error" role="alert">
+                    <IconInfo />
+                    <span>Count exceeds the 15 clothes limit. Please enter a number between 1 and 15.</span>
+                  </div>
+                )}
+
+                {/* Warning message if count is below minimum */}
+                {isUnderMin && (
+                  <div className="counter-limit-message counter-limit-message--error" role="alert">
+                    <IconInfo />
+                    <span>Each order must contain at least 1 cloth.</span>
+                  </div>
+                )}
               </div>
 
               <div className="modal-actions">
@@ -575,9 +663,13 @@ export default function StudentDashboard({ userEmail, onSignOut }) {
                 <button
                   type="submit"
                   className="btn-modal-submit"
-                  disabled={isSubmitting || !clothesCount || clothesCount <= 0}
+                  disabled={isSubmitting || !isCountValid}
                 >
-                  {isSubmitting ? 'Submitting…' : `Submit ${selectedService} Order`}
+                  {isSubmitting
+                    ? 'Submitting…'
+                    : isCountValid
+                      ? `Submit ${selectedService} Order (${parsedCount} ${parsedCount === 1 ? 'cloth' : 'clothes'})`
+                      : 'Enter 1–15 clothes to submit'}
                 </button>
               </div>
             </form>
