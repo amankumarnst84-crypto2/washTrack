@@ -149,7 +149,20 @@ function getRouteFromHash() {
 export default function App() {
   /* Simple client-side routing */
   const [currentRoute, setCurrentRoute] = useState(getRouteFromHash)
-  const [userEmail, setUserEmail] = useState('')
+  const [userEmail, setUserEmail] = useState(() => {
+    try {
+      return sessionStorage.getItem('washtrack_user_email') || ''
+    } catch {
+      return ''
+    }
+  })
+  const [userBagNo, setUserBagNo] = useState(() => {
+    try {
+      return (sessionStorage.getItem('washtrack_student_bag_no') || '').trim().toUpperCase()
+    } catch {
+      return ''
+    }
+  })
 
   useEffect(() => {
     function handleHashChange() {
@@ -231,16 +244,26 @@ export default function App() {
       }
 
       /* On success: route user according to selected role */
-      console.log('Login intent:', {
-        role,
-        email: email.trim(),
-        ...(role === 'student' ? { bagNo: bagNo.trim() } : {}),
-      })
-      setUserEmail(email.trim())
+      const cleanEmail = email.trim()
+      setUserEmail(cleanEmail)
+      try {
+        sessionStorage.setItem('washtrack_user_email', cleanEmail)
+      } catch {
+        /* ignore storage errors */
+      }
 
       if (role === 'student') {
+        const cleanBagNo = bagNo.trim().toUpperCase()
+        setUserBagNo(cleanBagNo)
+        try {
+          sessionStorage.setItem('washtrack_student_bag_no', cleanBagNo)
+        } catch {
+          /* ignore storage errors */
+        }
+        console.log('Login intent:', { role, email: cleanEmail, bagNo: cleanBagNo })
         navigateTo('student-dashboard')
       } else {
+        console.log('Login intent:', { role, email: cleanEmail })
         navigateTo('vendor-dashboard')
       }
     } catch (err) {
@@ -265,7 +288,16 @@ export default function App() {
     return (
       <StudentDashboard
         userEmail={userEmail}
-        onSignOut={() => navigateTo('login')}
+        userBagNo={userBagNo}
+        onSignOut={() => {
+          setUserBagNo('')
+          try {
+            sessionStorage.removeItem('washtrack_student_bag_no')
+          } catch {
+            /* ignore storage errors */
+          }
+          navigateTo('login')
+        }}
       />
     )
   }

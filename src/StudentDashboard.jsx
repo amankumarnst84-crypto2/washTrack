@@ -201,7 +201,13 @@ const INITIAL_ORDERS = [
   },
 ]
 
-export default function StudentDashboard({ userEmail, onSignOut }) {
+export default function StudentDashboard({ userEmail, userBagNo, onSignOut }) {
+  const displayBagNo = (
+    userBagNo ||
+    (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('washtrack_student_bag_no') : '') ||
+    'G285'
+  ).trim().toUpperCase()
+
   const [orders, setOrders] = useState(INITIAL_ORDERS)
   const [activeFilter, setActiveFilter] = useState('All')
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -316,7 +322,7 @@ export default function StudentDashboard({ userEmail, onSignOut }) {
           <div className="nav-user">
             <div className="user-info">
               <span className="user-name">{userEmail ? userEmail.split('@')[0] : 'Alex Rivera'}</span>
-              <span className="user-bag-no">Laundry Bag No. G285</span>
+              <span className="user-bag-no">{`Laundry Bag No. ${displayBagNo}`}</span>
             </div>
             <button
               type="button"
@@ -538,7 +544,7 @@ export default function StudentDashboard({ userEmail, onSignOut }) {
               )}
 
               <p className="modal-instructions">
-                Students submit one order at a time with <strong>1–15 clothes</strong> for a single service. Assigned bag: <strong>G285</strong>.
+                Students submit one order at a time with <strong>1–15 clothes</strong> for a single service. Assigned bag: <strong>{displayBagNo}</strong>.
               </p>
 
               {/* Service Selection: One service only */}
