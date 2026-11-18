@@ -1,476 +1,66 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { api } from './api'
 import StudentDashboard from './StudentDashboard'
 import VendorDashboard from './VendorDashboard'
 import './App.css'
+import './Workflow.css'
 
-/* ─────────────────────────────────────────
-   Inline SVG icons — no extra dependencies
-───────────────────────────────────────── */
-function IconWash() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="10" />
-      <circle cx="12" cy="12" r="4" />
-      <path d="M4.93 4.93l3.54 3.54M15.54 15.54l3.54 3.54M19.07 4.93l-3.54 3.54M8.46 15.54l-3.54 3.54" />
-    </svg>
-  )
-}
-
-function IconStudent() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-      <path d="M6 12v5c3 3 9 3 12 0v-5" />
-    </svg>
-  )
-}
-
-function IconVendor() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-      <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
-      <line x1="12" y1="12" x2="12" y2="16" />
-      <line x1="10" y1="14" x2="14" y2="14" />
-    </svg>
-  )
-}
-
-function IconMail() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="2" y="4" width="20" height="16" rx="2" />
-      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-    </svg>
-  )
-}
-
-function IconLock() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-    </svg>
-  )
-}
-
-function IconBag() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-      <line x1="3" y1="6" x2="21" y2="6" />
-      <path d="M16 10a4 4 0 0 1-8 0" />
-    </svg>
-  )
-}
-
-function IconEye({ off }) {
-  return off ? (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
-      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
-      <line x1="1" y1="1" x2="23" y2="23" />
-    </svg>
-  ) : (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  )
-}
-
-function IconAlert() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="10" />
-      <line x1="12" y1="8" x2="12" y2="12" />
-      <line x1="12" y1="16" x2="12.01" y2="16" />
-    </svg>
-  )
-}
-
-/* ─────────────────────────────────────────
-   Validation helpers
-───────────────────────────────────────── */
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-function validateForm({ role, email, password, bagNo }) {
-  const errors = {}
-  if (role === 'student') {
-    if (!bagNo.trim()) {
-      errors.bagNo = 'Laundry bag number is required.'
-    }
-  }
-  if (!email.trim()) {
-    errors.email = 'Email is required.'
-  } else if (!EMAIL_RE.test(email.trim())) {
-    errors.email = 'Enter a valid email address.'
-  }
-  if (!password) {
-    errors.password = 'Password is required.'
-  } else if (password.length < 8) {
-    errors.password = 'Password must be at least 8 characters.'
-  }
-  return errors
-}
-
-/* ─────────────────────────────────────────
-   Role definitions
-───────────────────────────────────────── */
-const ROLES = [
-  { id: 'student', label: 'Student',        Icon: IconStudent },
-  { id: 'vendor',  label: 'Laundry Vendor', Icon: IconVendor  },
-]
-
-/* Helper to resolve current route from window hash */
-function getRouteFromHash() {
-  const hash = window.location.hash.toLowerCase()
-  if (hash.includes('vendor')) {
-    return 'vendor-dashboard'
-  }
-  if (hash.includes('dashboard') || hash.includes('student')) {
-    return 'student-dashboard'
-  }
-  return 'login'
-}
-
-/* ─────────────────────────────────────────
-   App — client-side routing & login
-───────────────────────────────────────── */
 export default function App() {
-  /* Simple client-side routing */
-  const [currentRoute, setCurrentRoute] = useState(getRouteFromHash)
-  const [userEmail, setUserEmail] = useState(() => {
-    try {
-      return sessionStorage.getItem('washtrack_user_email') || ''
-    } catch {
-      return ''
-    }
-  })
-  const [userBagNo, setUserBagNo] = useState(() => {
-    try {
-      return (sessionStorage.getItem('washtrack_student_bag_no') || '').trim().toUpperCase()
-    } catch {
-      return ''
-    }
-  })
+  const [user, setUser] = useState(null)
+  const [checking, setChecking] = useState(true)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    function handleHashChange() {
-      setCurrentRoute(getRouteFromHash())
-    }
-    window.addEventListener('hashchange', handleHashChange)
-    return () => window.removeEventListener('hashchange', handleHashChange)
+    let active = true
+    api('/auth/me').then(data => { if (active) setUser(data.user) })
+      .catch(() => {}).finally(() => { if (active) setChecking(false) })
+    const expired = () => { setUser(null); setError('Your session expired. Please sign in again.') }
+    window.addEventListener('washtrack-session-expired', expired)
+    return () => { active = false; window.removeEventListener('washtrack-session-expired', expired) }
   }, [])
 
-  function navigateTo(route) {
-    if (route === 'vendor-dashboard') {
-      window.location.hash = '#/vendor/dashboard'
-    } else if (route === 'student-dashboard') {
-      window.location.hash = '#/student/dashboard'
-    } else {
-      window.location.hash = '#/login'
-    }
-    setCurrentRoute(route)
-  }
-
-  /* ── login form state ── */
-  const [role,         setRole]         = useState('student')
-  const [bagNo,        setBagNo]        = useState('')
-  const [email,        setEmail]        = useState('')
-  const [password,     setPassword]     = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-
-  /* ── UI state ── */
-  const [fieldErrors, setFieldErrors] = useState({})
-  const [serverError, setServerError] = useState('')
-  const [loading,     setLoading]     = useState(false)
-
-  /* Clear errors eagerly as the user types */
-  function handleBagNoChange(e) {
-    setBagNo(e.target.value)
-    if (serverError)        setServerError('')
-    if (fieldErrors.bagNo)  setFieldErrors(prev => ({ ...prev, bagNo: '' }))
-  }
-
-  function handleEmailChange(e) {
-    setEmail(e.target.value)
-    if (serverError)        setServerError('')
-    if (fieldErrors.email)  setFieldErrors(prev => ({ ...prev, email: '' }))
-  }
-
-  function handlePasswordChange(e) {
-    setPassword(e.target.value)
-    if (serverError)           setServerError('')
-    if (fieldErrors.password)  setFieldErrors(prev => ({ ...prev, password: '' }))
-  }
-
-  function handleRoleChange(id) {
-    setRole(id)
-    setServerError('')
-    if (fieldErrors.bagNo)     setFieldErrors(prev => ({ ...prev, bagNo: '' }))
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault()
-
-    /* Frontend validation */
-    const errors = validateForm({ role, email, password, bagNo })
-    if (Object.keys(errors).length > 0) {
-      setFieldErrors(errors)
-      return
-    }
-
-    setFieldErrors({})
-    setServerError('')
-    setLoading(true)
-
+  async function login(event) {
+    event.preventDefault()
+    setError(''); setBusy(true)
     try {
-      /* Simulated network round-trip */
-      await new Promise(resolve => setTimeout(resolve, 800))
-
-      /* Demo: surface error UI for a known bad credential */
-      if (email.trim().toLowerCase() === 'fail@test.com') {
-        throw new Error('Invalid email or password. Please try again.')
-      }
-
-      /* On success: route user according to selected role */
-      const cleanEmail = email.trim()
-      setUserEmail(cleanEmail)
-      try {
-        sessionStorage.setItem('washtrack_user_email', cleanEmail)
-      } catch {
-        /* ignore storage errors */
-      }
-
-      if (role === 'student') {
-        const cleanBagNo = bagNo.trim().toUpperCase()
-        setUserBagNo(cleanBagNo)
-        try {
-          sessionStorage.setItem('washtrack_student_bag_no', cleanBagNo)
-        } catch {
-          /* ignore storage errors */
-        }
-        console.log('Login intent:', { role, email: cleanEmail, bagNo: cleanBagNo })
-        navigateTo('student-dashboard')
-      } else {
-        console.log('Login intent:', { role, email: cleanEmail })
-        navigateTo('vendor-dashboard')
-      }
-    } catch (err) {
-      setServerError(err.message || 'Something went wrong. Please try again.')
-    } finally {
-      setLoading(false)
-    }
+      const result = await api('/auth/login', { method: 'POST', body: { email: email.trim(), password } })
+      setUser(result.user); setPassword('')
+      window.location.hash = result.user.role === 'STAFF' ? '/vendor/dashboard' : '/student/dashboard'
+    } catch (err) { setError(err.message) }
+    finally { setBusy(false) }
   }
-
-  /* If routed to Vendor Dashboard, render the vendor dashboard component */
-  if (currentRoute === 'vendor-dashboard') {
-    return (
-      <VendorDashboard
-        userEmail={userEmail}
-        onSignOut={() => navigateTo('login')}
-      />
-    )
+  async function logout() {
+    setBusy(true)
+    try {
+      await api('/auth/logout', { method: 'POST', body: {} })
+      setUser(null); setPassword(''); setError(''); window.location.hash = '/login'
+    } catch (err) { setError(err.message) }
+    finally { setBusy(false) }
   }
-
-  /* If routed to Student Dashboard, render the student dashboard component */
-  if (currentRoute === 'student-dashboard') {
-    return (
-      <StudentDashboard
-        userEmail={userEmail}
-        userBagNo={userBagNo}
-        onSignOut={() => {
-          setUserBagNo('')
-          try {
-            sessionStorage.removeItem('washtrack_student_bag_no')
-          } catch {
-            /* ignore storage errors */
-          }
-          navigateTo('login')
-        }}
-      />
-    )
+  if (checking) return <main className="wt-loading" role="status">Loading WashTrack…</main>
+  if (user) {
+    const Dashboard = user.role === 'STAFF' ? VendorDashboard : StudentDashboard
+    return <><div className="wt-auth-error">{error && <p role="alert">{error}</p>}</div><Dashboard user={user} onSignOut={logout} signingOut={busy} /></>
   }
-
-  const roleLabel = ROLES.find(r => r.id === role)?.label ?? 'user'
-
-  return (
-    <main className="login-page">
-      <div className="login-card" role="region" aria-label="Sign in">
-
-        {/* Brand */}
-        <div className="login-brand">
-          <span className="login-brand-icon" aria-hidden="true">
-            <IconWash />
-          </span>
-          <span className="login-brand-name">WashTrack</span>
+  return <main className="login-page">
+    <div className="login-card">
+      <div className="login-brand"><span className="login-brand-name">WashTrack</span></div>
+      <h1 className="login-heading">Your laundry, accounted for</h1>
+      <p className="login-subheading">Sign in with your assigned student or staff account</p>
+      {error && <p className="error-banner" role="alert">{error}</p>}
+      <form onSubmit={login}>
+        <div className="form-fields">
+          <label className="form-group">Email address<input className="form-input wt-login-input" type="email" autoComplete="username" required value={email} onChange={e => setEmail(e.target.value)} disabled={busy} /></label>
+          <label className="form-group">Password<input className="form-input wt-login-input" type={showPassword ? 'text' : 'password'} autoComplete="current-password" required maxLength={128} value={password} onChange={e => setPassword(e.target.value)} disabled={busy} /></label>
+          <label className="wt-check"><input type="checkbox" checked={showPassword} onChange={e => setShowPassword(e.target.checked)} /> Show password</label>
         </div>
-
-        {/* Headings */}
-        <h1 className="login-heading">Sign in to WashTrack</h1>
-        <p className="login-subheading">Select your role to get started</p>
-
-        {/* Role selector */}
-        <div
-          className="role-selector"
-          role="group"
-          aria-label="Select your account type"
-        >
-          {ROLES.map(({ id, label, Icon }) => (
-            <button
-              key={id}
-              type="button"
-              className={`role-btn${role === id ? ' role-btn--active' : ''}`}
-              aria-pressed={role === id}
-              onClick={() => handleRoleChange(id)}
-            >
-              <Icon />
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {/* Error banner */}
-        {serverError && (
-          <div className="error-banner" role="alert">
-            <IconAlert />
-            <span>{serverError}</span>
-          </div>
-        )}
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} noValidate>
-          <div className="form-fields">
-
-            {/* Laundry Bag No. (Student only) */}
-            {role === 'student' && (
-              <div className="form-group">
-                <label className="form-label" htmlFor="bagNo">
-                  Laundry Bag No.
-                </label>
-                <div className="input-wrapper">
-                  <span className="input-icon"><IconBag /></span>
-                  <input
-                    id="bagNo"
-                    className={`form-input${fieldErrors.bagNo ? ' form-input--error' : ''}`}
-                    type="text"
-                    autoComplete="off"
-                    placeholder="e.g. G285 or B442"
-                    value={bagNo}
-                    onChange={handleBagNoChange}
-                    disabled={loading}
-                    aria-describedby={fieldErrors.bagNo ? 'bagNo-error' : undefined}
-                    aria-invalid={!!fieldErrors.bagNo}
-                  />
-                </div>
-                {fieldErrors.bagNo && (
-                  <span className="field-error" id="bagNo-error" role="alert">
-                    <IconAlert />
-                    {fieldErrors.bagNo}
-                  </span>
-                )}
-              </div>
-            )}
-
-            {/* Email */}
-            <div className="form-group">
-              <label className="form-label" htmlFor="email">
-                Email address
-              </label>
-              <div className="input-wrapper">
-                <span className="input-icon"><IconMail /></span>
-                <input
-                  id="email"
-                  className={`form-input${fieldErrors.email ? ' form-input--error' : ''}`}
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={handleEmailChange}
-                  disabled={loading}
-                  aria-describedby={fieldErrors.email ? 'email-error' : undefined}
-                  aria-invalid={!!fieldErrors.email}
-                />
-              </div>
-              {fieldErrors.email && (
-                <span className="field-error" id="email-error" role="alert">
-                  <IconAlert />
-                  {fieldErrors.email}
-                </span>
-              )}
-            </div>
-
-            {/* Password */}
-            <div className="form-group">
-              <label className="form-label" htmlFor="password">
-                Password
-              </label>
-              <div className="input-wrapper">
-                <span className="input-icon"><IconLock /></span>
-                <input
-                  id="password"
-                  className={`form-input${fieldErrors.password ? ' form-input--error' : ''}`}
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  placeholder="Min. 8 characters"
-                  value={password}
-                  onChange={handlePasswordChange}
-                  disabled={loading}
-                  aria-describedby={fieldErrors.password ? 'password-error' : undefined}
-                  aria-invalid={!!fieldErrors.password}
-                />
-                <button
-                  type="button"
-                  className="password-toggle"
-                  onClick={() => setShowPassword(v => !v)}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  tabIndex={0}
-                >
-                  <IconEye off={showPassword} />
-                </button>
-              </div>
-              {fieldErrors.password && (
-                <span className="field-error" id="password-error" role="alert">
-                  <IconAlert />
-                  {fieldErrors.password}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Submit */}
-          <button
-            type="submit"
-            className="submit-btn"
-            disabled={loading}
-            aria-busy={loading}
-          >
-            {loading ? (
-              <>
-                <span className="spinner" aria-hidden="true" />
-                Signing in…
-              </>
-            ) : (
-              `Sign in as ${roleLabel}`
-            )}
-          </button>
-        </form>
-
-        <p className="login-footer-note">
-          Your actual access level is verified by the server.
-        </p>
-      </div>
-    </main>
-  )
+        <button className="submit-btn" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
+      </form>
+      <p className="login-footer-note">Your account determines your role and assigned bag. Need an account? Contact laundry staff.</p>
+    </div>
+  </main>
 }

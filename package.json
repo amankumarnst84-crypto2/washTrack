@@ -9,7 +9,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "server": "npm --prefix server start",
-    "test:api": "npm --prefix server test"
+    "test:api": "npm --prefix server test",
+    "db:setup": "npm --prefix server run db:generate && npm --prefix server run db:migrate && npm --prefix server run db:seed",
+    "start": "npm run build && npm run server"
   },
   "dependencies": {
     "react": "^19.3.1",
