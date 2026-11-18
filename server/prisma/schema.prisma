@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+enum Role {
+  STUDENT
+  STAFF
+}
+enum OrderStatus {
+  SUBMITTED
+  RECEIVED
+  WASHING
+  READY
+  COLLECTED
+}
+enum ComplaintStatus {
+  OPEN
+  IN_PROGRESS
+  AWAITING_CONFIRMATION
+  RESOLVED
+}
+model User {
+  id           String @id @default(uuid())
+  name         String
+  email        String @unique
+  tokenVersion Int @default(0)
+  passwordHash String
+  role         Role @default(STUDENT)
+  bagNo        String? @unique
+  orders       Order[]
+  createdAt    DateTime @default(now())
+}
+model Order {
+  id          String @id @default(uuid())
+  studentId   String
+  student     User @relation(fields: [studentId], references: [id])
+  bagNo       String
+  status      OrderStatus @default(SUBMITTED)
+  totalCount  Int
+  delayReason String @default("")
+  lotId       String?
+  lot         Lot? @relation(fields: [lotId], references: [id])
+  items       OrderItem[]
+  events      OrderEvent[]
+  complaints  Complaint[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([studentId, createdAt])
+}
+model OrderItem {
+  id       String @id @default(uuid())
+  orderId  String
+  order    Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  type     String
+  quantity Int
+  @@unique([orderId, type])
+}
+model OrderEvent {
+  id        String @id @default(uuid())
+  orderId   String
+  order     Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    OrderStatus
+  createdAt DateTime @default(now())
+}
+model Lot {
+  id        String @id @default(uuid())
+  date      String
+  shift     String
+  startedAt DateTime?
+  orders    Order[]
+  @@unique([date, shift])
+}
+model Complaint {
+  id          String @id @default(uuid())
+  orderId     String
+  order       Order @relation(fields: [orderId], references: [id])
+  type        String
+  itemType    String?
+  quantity    Int?
+  description String
+  status      ComplaintStatus @default(OPEN)
+  events      ComplaintEvent[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([orderId])
+}
+model ComplaintEvent {
+  id          String @id @default(uuid())
+  complaintId String
+  complaint   Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  status      ComplaintStatus
+  actorRole   Role
+  message     String
+  createdAt   DateTime @default(now())
+}
+
+// Staff authorizes an assigned email and bag before a student signs up.
+model RegistrationInvite {
+  id        String @id @default(uuid())
+  email     String @unique
+  bagNo     String @unique
+  tokenHash String @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+}
