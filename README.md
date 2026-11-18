@@ -4,68 +4,43 @@
 
 Rishihood hostel laundry demo. React frontend + CommonJS Express backend + PostgreSQL through Prisma Client.
 
-## Clone and run the complete app
+## Clone and run
 
-**Use the `codex/backend-complete` branch. `main` still contains the React starter and the team's separate database draft.**
+Use `codex/backend-complete`. The default `main` branch still has the React starter.
 
 ```sh
-git clone --branch codex/backend-complete --single-branch https://github.com/amankumarnst84-crypto2/washTrack.git washtrack-app
+git clone -b codex/backend-complete --single-branch https://github.com/amankumarnst84-crypto2/washTrack.git washtrack-app
 cd washtrack-app
-npm ci
-npm ci --prefix server
-```
-
-Use Node.js 22.13+ and a running PostgreSQL server. Create a **new empty** database named `washtrack_demo` with PostgreSQL/pgAdmin. The teammate's existing five-table database is not compatible with these migrations yet.
-
-Copy the environment example:
-
-```sh
-cp server/.env.example server/.env
-```
-
-Edit `server/.env` for your local PostgreSQL username/password:
-
-```dotenv
-DATABASE_URL="postgresql://YOUR_USER:YOUR_PASSWORD@localhost:5432/washtrack_demo?schema=public"
-JWT_SECRET="PASTE_A_RANDOM_64_CHARACTER_HEX_VALUE_HERE"
-PORT=3001
-DEMO_PASSWORD="WashTrackDemo15!"
-```
-
-Generate the JWT_SECRET value with:
-
-```sh
-node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
-```
-
-For a local Postgres.app user without a database password, omit `:YOUR_PASSWORD` from the URL. URL-encode any special characters in database credentials. Never commit `.env`.
-
-```sh
-npm run db:setup
-npm start
-```
-
-Open **http://127.0.0.1:3001**. `npm start` builds the real React frontend and serves it together with the API. One terminal is enough. This opens the WashTrack sign-in page, not the React starter.
-
-Demo login: `student@washtrack.test` or `staff@washtrack.test`, using the `DEMO_PASSWORD` chosen before seeding. The seed does not change passwords for existing accounts.
-
-## Existing laptop / development mode
-
-If `.env` and the project database already exist, preserve them. On the originally configured laptop, the database is `washtrack_demo_20261111`, not `washtrack_demo`. Apply pending migrations with `npm run db:setup`, then use `npm start`.
-
-For live frontend editing, use two terminals instead:
-
-```sh
-# Terminal 1, project root
-npm run server
-```
-
-```sh
-# Terminal 2, project root
+npm i
 npm run dev
 ```
 
-Open Vite's printed Local URL. For phone testing, use its Network URL on the same Wi-Fi. Vite proxies `/api` to backend port 3001. `npm run dev` alone does not start the backend. `npm run preview` is only a static frontend preview and is not the full-stack start command.
+`npm i` installs frontend and backend dependencies and generates Prisma Client. `npm run dev` applies committed migrations, seeds missing demo accounts and starts both API and frontend. Open **http://localhost:5173**. Ctrl+C stops both.
+
+### One-time PostgreSQL setup on each new laptop
+
+Node.js 22.13+ and running PostgreSQL are required. The first dev run creates ignored `server/.env`, generates JWT_SECRET and sets a demo password, then stops with setup instructions. Edit DATABASE_URL in that file to point to your own **empty development database**, for example:
+
+```dotenv
+DATABASE_URL="postgresql://YOUR_USER:YOUR_PASSWORD@localhost:5432/washtrack_demo?schema=public"
+```
+
+Create `washtrack_demo` in PostgreSQL/pgAdmin first. Replace the username/password with your local credentials (URL-encode special characters). For a local Postgres.app user without a password, omit `:YOUR_PASSWORD`. Then rerun `npm run dev`. No database credentials are committed or shared through Git.
+
+For existing setups, the launcher preserves `.env`; it never overwrites its connection, secret or password. On the original laptop, keep the existing `washtrack_demo_20261111` database. Do not point these migrations at the teammate's five-table database until its schema has been reconciled.
+
+New `.env` files use demo password `WashTrackDemo15!`, which you can change before the first seed. Existing accounts retain their original password even if DEMO_PASSWORD changes later. Demo emails: `student@washtrack.test` and `staff@washtrack.test`.
+
+### Other commands
+
+- `npm start`: build frontend and serve frontend/API together on http://127.0.0.1:3001 (or configured PORT). Requires database preparation first.
+- `npm run db:setup`: generate Prisma Client, apply migrations and seed explicitly.
+- `npm run server`: backend only.
+- `npm run dev:client`: Vite only, for a separately running API on port 3001.
+- `npm run test:api`: database-backed API tests.
+- `npm run preview`: static frontend preview only, not a full-stack launch.
+
+The frontend dev server defaults to port 5173 and fails clearly if occupied. Set FRONTEND_PORT in server/.env to use another frontend port. API defaults to 3001; changing PORT in server/.env also updates the proxy when using npm run dev. On the same Wi-Fi, phones can use Vite's printed Network URL.
 
 ### Demo accounts
 

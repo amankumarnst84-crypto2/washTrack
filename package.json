@@ -4,14 +4,16 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/dev.cjs",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "server": "npm --prefix server start",
     "test:api": "npm --prefix server test",
     "db:setup": "npm --prefix server run db:generate && npm --prefix server run db:migrate && npm --prefix server run db:seed",
-    "start": "npm run build && npm run server"
+    "start": "npm run build && npm run server",
+    "dev:client": "vite",
+    "postinstall": "npm ci --prefix server && npm --prefix server run db:generate"
   },
   "dependencies": {
     "react": "^19.3.1",

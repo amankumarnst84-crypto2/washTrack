@@ -16,7 +16,7 @@ npm run db:seed
 npm start
 ```
 
-For the existing configured laptop, keep its `.env` and skip copying the example. Default API: http://127.0.0.1:3001. PostgreSQL must be running. In the complete project, run `npm run dev` from the React root in a second terminal. Vite proxies `/api` to the backend. If `../dist/index.html` exists, the backend also serves that frontend build.
+For the existing configured laptop, keep its `.env` and skip copying the example. Default API: http://127.0.0.1:3001. PostgreSQL must be running. In the complete project, root `npm i` installs both dependency sets and root `npm run dev` prepares the database and launches both servers together. Do not start a separate API process when using that command. Vite proxies `/api` to the backend. If `../dist/index.html` exists, the backend also serves that frontend build.
 
 The seed creates fictional student and staff accounts using the password you put in DEMO_PASSWORD. It does not reset existing passwords or orders. Account emails: student@washtrack.test, student2@washtrack.test, staff@washtrack.test.
 
