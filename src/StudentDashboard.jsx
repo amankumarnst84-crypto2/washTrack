@@ -1,79 +1,529 @@
-import { useEffect, useRef, useState } from 'react'
-import { api } from './api'
-import { Header, Summary, Filters, filteredOrders, OrderDetails, Badge, Complaints, ITEMS, ISSUE_TYPES, dateTime, orderLabel, useLaundry } from './shared'
+import { useState } from "react";
+import { api } from "./api";
+import ComplaintUpdates from "./ComplaintUpdates";
+import { Badge, Brand, Icon, Modal, Notice } from "./ui";
+import { dateText, shortId, statusName, useOrders, usePage } from "./data";
 
 export default function StudentDashboard({ user, onSignOut, signingOut }) {
-  const { orders, complaints, loading, error, refresh } = useLaundry()
-  const [query, setQuery] = useState('')
-  const [status, setStatus] = useState('ALL')
-  const [showEntry, setShowEntry] = useState(false)
-  const [counts, setCounts] = useState({})
-  const [busy, setBusy] = useState(false)
-  const [notice, setNotice] = useState('')
-  const [actionError, setActionError] = useState('')
-  const [complaintOrder, setComplaintOrder] = useState(null)
-  const reportRef = useRef(null)
-  useEffect(() => {
-    if (complaintOrder) { reportRef.current?.scrollIntoView({ block: 'start' }); reportRef.current?.focus() }
-  }, [complaintOrder])
-  const [issue, setIssue] = useState('MISSING')
-  const [itemType, setItemType] = useState('Shirt')
-  const [quantity, setQuantity] = useState('1')
-  const [description, setDescription] = useState('')
-  const total = Object.values(counts).reduce((sum, value) => sum + Number(value || 0), 0)
-  const validCounts = Object.values(counts).every(value => value === '' || (Number.isInteger(Number(value)) && Number(value) >= 0 && Number(value) <= 15))
-  const active = orders.find(o => o.status !== 'COLLECTED')
-  const ready = orders.find(o => o.status === 'READY')
-  async function mutate(path, method, body, message) {
-    setBusy(true); setActionError(''); setNotice('')
-    try { await api(path, { method, body }); setNotice(message); await refresh(); return true }
-    catch (err) { setActionError(err.message); return false }
-    finally { setBusy(false) }
+  const { orders, loading, error, refresh } = useOrders();
+  const [route, go] = usePage("/home");
+  const page = ["/new", "/history"].includes(route) ? route : "/home";
+  const [count, setCount] = useState(1);
+  const [filter, setFilter] = useState("All");
+  const [showComplaints, setShowComplaints] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [actionError, setActionError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [selected, setSelected] = useState(null);
+  const [report, setReport] = useState(null);
+  const active = orders.find((o) => o.status !== "COLLECTED");
+  async function submit(e) {
+    e.preventDefault();
+    if (busy || active || !Number.isInteger(count) || count < 1 || count > 15) {
+      return;
+    }
+    setBusy(true);
+    setActionError("");
+    setNotice("");
+    try {
+      await api("/orders", { method: "POST", body: { totalCount: count } });
+      await refresh();
+      setCount(1);
+      go("/home");
+      setNotice("Order submitted. Hand your bag to the laundry staff.");
+    } catch (err) {
+      setActionError(err.message);
+    } finally {
+      setBusy(false);
+    }
   }
-  async function submitOrder(event) {
-    event.preventDefault()
-    if (!validCounts || total < 1 || total > 15 || active) return
-    const items = Object.entries(counts).filter(([, n]) => Number(n) > 0).map(([type, n]) => ({ type, quantity: Number(n) }))
-    if (await mutate('/orders', 'POST', { items }, 'Entry saved. Hand your bag to staff so they can confirm receipt.')) { setShowEntry(false); setCounts({}) }
+  const shown = orders.filter(
+    (o) =>
+      filter === "All" ||
+      (filter === "Active"
+        ? o.status !== "COLLECTED"
+        : o.status === "COLLECTED"),
+  );
+  const collectedAt = (order) =>
+    order.events?.find((e) => e.status === "COLLECTED")?.createdAt;
+  return (
+    <div className="student-shell">
+      <header className="student-header">
+        <div>
+          <Brand />
+          <span className="bag-pill">Bag {user.bagNo || "Unassigned"}</span>
+        </div>
+        <button
+          className="sign-out"
+          disabled={signingOut}
+          onClick={onSignOut}
+        >
+          {signingOut ? "Signing out…" : "Sign Out"}
+        </button>
+      </header>
+      <main className="student-main">
+        <div className="page-heading">
+          <h1>
+            {page === "/new"
+              ? "New order"
+              : page === "/history"
+                ? "Order history"
+                : "My laundry"}
+          </h1>
+          <p>
+            {page === "/new"
+              ? "Count your clothes before handing over your bag."
+              : page === "/history"
+                ? "All your laundry, in one place."
+                : "Keep track of your current bag."}
+          </p>
+        </div>
+        <Notice
+          error={actionError || error}
+          message={notice}
+          retry={error ? refresh : undefined}
+        />
+        {loading ? (
+          <div
+            className="empty-state"
+            role="status"
+          >
+            Loading your laundry…
+          </div>
+        ) : (
+          <>
+            {page === "/home" &&
+              (active ? (
+                <>
+                  <article className="card current-order">
+                    <p className="eyebrow">CURRENT ORDER</p>
+                    <div className="row between">
+                      <h2>{shortId(active.id)}</h2>
+                      <Badge status={active.status} />
+                    </div>
+                    <div className="order-summary">
+                      <div>
+                        <strong className="count-large">
+                          {active.totalCount}
+                        </strong>
+                        <span>Total clothes</span>
+                      </div>
+                      <div>
+                        <span>Submitted</span>
+                        <strong>{dateText(active.createdAt, true)}</strong>
+                      </div>
+                    </div>
+                    <Progress status={active.status} />
+                  </article>
+                  <article className="card collection-card">
+                    <h2>Collection update</h2>
+                    <div className="collection-message">
+                      <Icon
+                        name={active.status === "READY" ? "check" : "clock"}
+                        size={32}
+                      />
+                      <div>
+                        <strong>
+                          {active.status === "READY"
+                            ? "Your bag is ready to collect."
+                            : active.status === "WASHING"
+                              ? "Your bag is being washed."
+                              : active.status === "RECEIVED"
+                                ? "Your bag is with the staff."
+                                : "Waiting for staff to receive your bag."}
+                        </strong>
+                        <p>
+                          {active.delayReason ||
+                            (active.status === "READY"
+                              ? `Show bag ${user.bagNo} on your phone at the counter.`
+                              : active.status === "SUBMITTED"
+                                ? "Hand your bag to the laundry staff to begin."
+                                : "Once it reaches the counter, its status will change to Ready for pickup.")}
+                        </p>
+                      </div>
+                    </div>
+                  </article>
+                  {active.status !== "SUBMITTED" && (
+                    <p className="help-line">
+                      Need help?{" "}
+                      <button
+                        className="text-button"
+                        onClick={() => setReport(active)}
+                      >
+                        Raise a complaint
+                      </button>
+                    </p>
+                  )}
+                </>
+              ) : (
+                <div className="card empty-state">
+                  <Icon
+                    name="bag"
+                    size={42}
+                  />
+                  <h2>No bag in the laundry</h2>
+                  <p>
+                    Ready for a fresh start? Count your clothes and create a new
+                    order.
+                  </p>
+                  <button
+                    className="primary"
+                    onClick={() => go("/new")}
+                  >
+                    New Order <Icon name="plus" />
+                  </button>
+                </div>
+              ))}
+            {page === "/new" && (
+              <form onSubmit={submit}>
+                <div className="card new-order-card">
+                  <label className="field">
+                    Bag number
+                    <span className="readonly-input">
+                      {user.bagNo || "Not assigned"}
+                      <Icon name="lock" />
+                    </span>
+                    <small>Linked to your account</small>
+                  </label>
+                  <label
+                    className="field count-label"
+                    htmlFor="total-clothes"
+                  >
+                    Total clothes
+                  </label>
+                  <div className="count-stepper">
+                    <button
+                      type="button"
+                      aria-label="Remove one clothing item"
+                      disabled={busy || count <= 1 || !!active}
+                      onClick={() => setCount(count - 1)}
+                    >
+                      <Icon
+                        name="minus"
+                        size={30}
+                      />
+                    </button>
+                    <input
+                      id="total-clothes"
+                      aria-label="Total clothes"
+                      type="number"
+                      inputMode="numeric"
+                      min="1"
+                      max="15"
+                      step="1"
+                      required
+                      value={count}
+                      disabled={busy || !!active}
+                      onChange={(e) =>
+                        setCount(
+                          e.target.value === "" ? "" : Number(e.target.value),
+                        )
+                      }
+                    />
+                    <button
+                      type="button"
+                      aria-label="Add one clothing item"
+                      disabled={busy || count >= 15 || !!active}
+                      onClick={() => setCount(Number(count) + 1)}
+                    >
+                      <Icon
+                        name="plus"
+                        size={30}
+                      />
+                    </button>
+                  </div>
+                  <p className="count-hint">Minimum 1 · Maximum 15 clothes</p>
+                  <div className="info-box">
+                    <Icon
+                      name="info"
+                      size={27}
+                    />
+                    <p>Enter the total number of clothes in your bag.</p>
+                  </div>
+                </div>
+                {active && (
+                  <div className="notice">
+                    Your bag already has an active order. Collect it before
+                    submitting again.{" "}
+                    <button
+                      className="text-button"
+                      type="button"
+                      onClick={() => go("/home")}
+                    >
+                      View current order
+                    </button>
+                  </div>
+                )}
+                <button
+                  className="primary wide submit-order"
+                  disabled={
+                    busy ||
+                    !!active ||
+                    !!error ||
+                    !user.bagNo ||
+                    !Number.isInteger(count) ||
+                    count < 1 ||
+                    count > 15
+                  }
+                >
+                  {busy ? "Submitting…" : "Submit Order"}
+                  <Icon name="arrow" />
+                </button>
+                <p className="form-caption">
+                  Submit when you hand your bag to the laundry staff.
+                </p>
+              </form>
+            )}
+            {page === "/history" && (
+              <>
+                <div
+                  className="filter-pills"
+                  aria-label="Filter orders"
+                >
+                  {["All", "Active", "Collected"].map((f) => (
+                    <button
+                      key={f}
+                      className={filter === f ? "active" : ""}
+                      onClick={() => setFilter(f)}
+                    >
+                      {f}
+                    </button>
+                  ))}
+                </div>
+                <div className="history-list">
+                  {shown.map((o) => (
+                    <button
+                      className="card history-card"
+                      key={o.id}
+                      onClick={() => setSelected(o)}
+                    >
+                      <div className="row">
+                        <strong>{shortId(o.id)}</strong>
+                        <Badge status={o.status} />
+                      </div>
+                      <p>Submitted {dateText(o.createdAt)}</p>
+                      <div className="row between">
+                        <h2>{o.totalCount} clothes</h2>
+                        <Icon name="chevron" />
+                      </div>
+                      <div className="history-foot">
+                        {o.status === "COLLECTED" && collectedAt(o)
+                          ? `Collected ${dateText(collectedAt(o))}`
+                          : statusName[o.status]}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                {!shown.length && (
+                  <div className="card empty-state">
+                    <Icon
+                      name="history"
+                      size={36}
+                    />
+                    <h2>No orders here yet</h2>
+                    <p>Your laundry history will appear here.</p>
+                  </div>
+                )}
+                <p className="help-line">
+                  <button
+                    className="text-button"
+                    onClick={() => setShowComplaints(true)}
+                  >
+                    My complaints & updates
+                  </button>
+                </p>
+                <p className="history-caption">
+                  Showing {shown.length}{" "}
+                  {shown.length === 1 ? "order" : "orders"}
+                </p>
+              </>
+            )}
+          </>
+        )}
+      </main>
+      <nav
+        className="bottom-nav"
+        aria-label="Student navigation"
+      >
+        {[
+          ["/home", "home", "Home"],
+          ["/new", "plus", "New Order"],
+          ["/history", "history", "History"],
+        ].map(([path, icon, text]) => (
+          <button
+            key={path}
+            className={`${page === path ? "active" : ""} ${path === "/new" ? "nav-new" : ""}`}
+            aria-current={page === path ? "page" : undefined}
+            onClick={() => {
+              go(path);
+              setActionError("");
+              setNotice("");
+            }}
+          >
+            <span>
+              <Icon
+                name={icon}
+                size={27}
+              />
+            </span>
+            {text}
+          </button>
+        ))}
+      </nav>
+      {selected && (
+        <Modal
+          title={shortId(selected.id)}
+          onClose={() => setSelected(null)}
+        >
+          <p>
+            Bag {selected.bagNo} · {selected.totalCount} clothes
+          </p>
+          <ol className="event-list">
+            {selected.events.map((e) => (
+              <li key={e.id}>
+                <strong>{statusName[e.status]}</strong>
+                <time>{dateText(e.createdAt, true)}</time>
+              </li>
+            ))}
+          </ol>
+          {selected.status !== "SUBMITTED" && (
+            <button
+              className="primary wide"
+              onClick={() => {
+                setReport(selected);
+                setSelected(null);
+              }}
+            >
+              Report an issue
+            </button>
+          )}
+        </Modal>
+      )}
+      {showComplaints && (
+        <ComplaintUpdates onClose={() => setShowComplaints(false)} />
+      )}
+      {report && (
+        <ComplaintForm
+          order={report}
+          onClose={() => setReport(null)}
+        />
+      )}
+    </div>
+  );
+}
+function Progress({ status }) {
+  const step = status === "READY" ? 2 : status === "WASHING" ? 1 : 0;
+  return (
+    <ol className="progress-track">
+      {["Pending", "Washing", "Ready to collect"].map((text, i) => (
+        <li
+          key={text}
+          className={i < step ? "complete" : i === step ? "current" : ""}
+        >
+          <span>
+            {i < step && (
+              <Icon
+                name="check"
+                size={16}
+              />
+            )}
+          </span>
+          <p>{text}</p>
+        </li>
+      ))}
+    </ol>
+  );
+}
+function ComplaintForm({ order, onClose }) {
+  const [type, setType] = useState("MISSING");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [sent, setSent] = useState(false);
+  async function submit(e) {
+    e.preventDefault();
+    setBusy(true);
+    setError("");
+    const fields = Object.fromEntries(new FormData(e.currentTarget));
+    try {
+      await api(`/orders/${order.id}/complaints`, {
+        method: "POST",
+        body: {
+          type,
+          description: fields.description,
+          quantity: Number(fields.quantity),
+        },
+      });
+      setSent(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
   }
-  async function submitComplaint(event) {
-    event.preventDefault()
-    const body = { type: issue, description, itemType, quantity: Number(quantity) }
-    if (await mutate(`/orders/${complaintOrder.id}/complaints`, 'POST', body, 'Complaint submitted. Track staff responses below.')) { setComplaintOrder(null); setDescription('') }
-  }
-  return <div className="wt-app wt-student"><Header user={user} onSignOut={onSignOut} signingOut={signingOut} />
-    <main className="wt-main">
-      <section className="wt-hero"><div><p className="wt-eyebrow">STUDENT DASHBOARD</p><h1>Your laundry, without the guesswork</h1><p>Bag <strong>{user.bagNo}</strong> · Maximum 15 clothes · Included in hostel fees</p></div><button disabled={busy || loading || !!error || !!active} onClick={() => { setShowEntry(!showEntry); setActionError('') }}>{showEntry ? 'Close entry form' : '+ New laundry entry'}</button></section>
-      {notice && <p className="wt-success" role="status">{notice}</p>}
-      {(error || actionError) && <div className="wt-error" role="alert">{error || actionError}{error && <button className="wt-secondary" onClick={refresh}>Retry</button>}</div>}
-      {ready && <section className="wt-ready" role="status"><h2>Your bag is ready at the counter</h2><p>Show bag number <strong>{user.bagNo}</strong> on this screen to collect {orderLabel(ready.id)}. Staff will record the handover.</p></section>}
-      {active && !ready && <p className="wt-info">Your bag already has an active entry ({orderLabel(active.id)}). You can submit again after collection.</p>}
-      {showEntry && !active && <section className="wt-section"><h2>What are you sending?</h2><p className="wt-muted">Enter each type before handing in your bag. Count is student-declared. For more than 15 clothes, speak to staff.</p><form className="wt-form" onSubmit={submitOrder}>
-        <div className="wt-item-inputs">{ITEMS.map(type => <label key={type}>{type}<input type="number" min="0" max="15" step="1" inputMode="numeric" placeholder="0" value={counts[type] ?? ''} onChange={e => setCounts({ ...counts, [type]: e.target.value })} /></label>)}</div>
-        <p className={total > 15 || !validCounts ? 'wt-field-error' : 'wt-total'} aria-live="polite">Total: {total} / 15 clothes{!validCounts && ' · Use whole numbers only.'}</p>
-        <div className="wt-actions"><button disabled={busy || !validCounts || total < 1 || total > 15}>Submit entry</button><button type="button" className="wt-secondary" onClick={() => setShowEntry(false)}>Cancel</button></div>
-      </form></section>}
-      {loading ? <p role="status">Loading your laundry…</p> : <><Summary orders={orders} />
-        <section className="wt-section"><h2>Your laundry entries</h2><p className="wt-muted">Status refreshes every 10 seconds. Check your clothes after collection.</p><Filters query={query} setQuery={setQuery} status={status} setStatus={setStatus} />
-          <div className="wt-order-grid">{filteredOrders(orders, query, status).map(order => <article className="wt-order" key={order.id}>
-            <div className="wt-order-heading"><h3>{orderLabel(order.id)}</h3><Badge status={order.status} /></div>
-            <p>Bag {order.bagNo} · {order.totalCount} clothes</p><p className="wt-muted">Submitted {dateTime(order.createdAt)}</p>
-            {order.delayReason && <p className="wt-warning">Delay: {order.delayReason}</p>}
-            <OrderDetails order={order} />
-            {order.status === 'COLLECTED' && <p className="wt-muted">Bag handed over. Missing or wrong clothes? You can still report an issue.</p>}
-            {order.status !== 'SUBMITTED' && <button className="wt-secondary" disabled={busy} onClick={() => { setComplaintOrder(order); setDescription(''); setIssue('MISSING'); setItemType(order.items[0].type); setQuantity('1') }}>Report an issue</button>}
-          </article>)}</div>
-          {!filteredOrders(orders, query, status).length && <p className="wt-empty">No entries match. {orders.length ? 'Try another search or status.' : 'Create your first laundry entry above.'}</p>}
-        </section>
-        {complaintOrder && <section ref={reportRef} tabIndex={-1} className="wt-section wt-report" aria-label="Report a laundry issue"><h2>Report an issue: {orderLabel(complaintOrder.id)}</h2><form className="wt-form" onSubmit={submitComplaint}>
-          <label>Issue type<select value={issue} onChange={e => setIssue(e.target.value)}>{Object.entries(ISSUE_TYPES).map(([value, name]) => <option value={value} key={value}>{name}</option>)}</select></label>
-          {['MISSING', 'EXTRA'].includes(issue) && <div className="wt-form-row"><label>Clothing type<select value={itemType} onChange={e => setItemType(e.target.value)}>{ITEMS.map(type => <option key={type}>{type}</option>)}</select></label><label>Quantity<input type="number" required min="1" max="15" step="1" inputMode="numeric" value={quantity} onChange={e => setQuantity(e.target.value)} /></label></div>}
-          <label>Describe the issue<textarea required maxLength={1000} value={description} onChange={e => setDescription(e.target.value)} placeholder="For example: one blue shirt is missing from my bag." /></label>
-          {issue === 'EXTRA' && <p className="wt-info">Return the extra clothing to staff. They can record its return and handover in the complaint responses.</p>}
-          <div className="wt-actions"><button disabled={busy}>Submit complaint</button><button type="button" className="wt-secondary" onClick={() => setComplaintOrder(null)}>Cancel</button></div>
-        </form></section>}
-        <Complaints complaints={complaints} busy={busy} onChange={(id, next, message) => mutate(`/complaints/${id}`, 'PATCH', { status: next, message }, 'Your response was saved.')} />
-      </>}
-    </main>
-  </div>
+  return (
+    <Modal
+      title="Raise a complaint"
+      onClose={onClose}
+    >
+      <p className="muted">
+        {shortId(order.id)} · Bag {order.bagNo}
+      </p>
+      {sent ? (
+        <div
+          className="notice success"
+          role="status"
+        >
+          Complaint submitted. Laundry staff can now review your issue.
+        </div>
+      ) : (
+        <form
+          className="stack"
+          onSubmit={submit}
+        >
+          <Notice error={error} />
+          <label className="field">
+            Issue
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+            >
+              <option value="MISSING">Missing clothes</option>
+              <option value="EXTRA">Extra clothes</option>
+              <option value="WASH_QUALITY">Poor washing / stains</option>
+              <option value="COLOUR_DAMAGE">Colour damage</option>
+            </select>
+          </label>
+          {["MISSING", "EXTRA"].includes(type) && (
+            <label className="field">
+              Number of clothes
+              <input
+                type="number"
+                name="quantity"
+                min="1"
+                max={type === "MISSING" ? order.totalCount : 15}
+                defaultValue="1"
+                required
+              />
+            </label>
+          )}
+          <label className="field">
+            Describe the issue
+            <textarea
+              name="description"
+              placeholder="Tell the staff what happened…"
+              required
+              maxLength={1000}
+              rows="4"
+            />
+          </label>
+          <button
+            className="primary wide"
+            disabled={busy}
+          >
+            {busy ? "Submitting…" : "Submit complaint"}
+          </button>
+        </form>
+      )}
+    </Modal>
+  );
 }
