@@ -1,0 +1,8 @@
+node_modules/
+server/node_modules/
+dist/
+package-lock.json
+server/package-lock.json
+server/prisma/migrations/
+.env
+server/.env
