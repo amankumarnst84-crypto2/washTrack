@@ -1,119 +1,118 @@
-/* ═══════════════════════════════════════════════════
-   WashTrack design tokens — light sky-blue theme
-   Light-only: no dark-mode overrides anywhere.
-   color-scheme: light forces the browser to use light
-   scrollbars/controls even on dark-mode systems.
-═══════════════════════════════════════════════════ */
 :root {
-  /* ── Page & surface ─────────────────────── */
-  --bg:        #eef6fc;   /* very light sky-blue page background  */
-  --surface:   #ffffff;   /* card & input surface                 */
-  --surface-2: #f5fafd;   /* slightly tinted surface variant      */
-
-  /* ── Borders ────────────────────────────── */
-  --border:    #bdd8f0;   /* pale sky-blue border                 */
-  --border-2:  #d6ebf7;   /* softer secondary border              */
-
-  /* ── Text — dark navy scale ─────────────── */
-  --text:       #3d5a73;  /* body / secondary text                */
-  --text-h:     #0d2740;  /* headings, labels (dark navy)         */
-  --text-muted: #7a98b4;  /* placeholders / captions              */
-
-  /* ── Accent — sky blue ──────────────────── */
-  --accent:        #3b9bd8;
-  --accent-hover:  #2d87c2;
-  --accent-bg:     rgba(59, 155, 216, 0.09);
-  --accent-border: rgba(59, 155, 216, 0.42);
-
-  /* ── Status ─────────────────────────────── */
-  --error:      #c0392b;
-  --error-bg:   rgba(192, 57, 43, 0.08);
-  --success:    #16a34a;
-  --success-bg: rgba(22, 163, 74, 0.08);
-
-  /* ── Inputs ─────────────────────────────── */
-  --input-bg:         #ffffff;
-  --input-focus-ring: 0 0 0 3px rgba(59, 155, 216, 0.22);
-
-  /* ── Elevation ──────────────────────────── */
-  --shadow:    rgba(13, 39, 64, 0.09) 0 12px 32px -6px,
-               rgba(13, 39, 64, 0.05) 0  4px 10px -2px;
-  --shadow-sm: rgba(13, 39, 64, 0.07) 0  2px  8px -1px;
-
-  /* ── Shape ──────────────────────────────── */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-
-  /* ── Misc compatibility tokens ──────────── */
-  --code-bg:   #e4f2fb;
-  --social-bg: rgba(221, 238, 249, 0.5);
-
-  /* ── Typography ─────────────────────────── */
-  --sans:    system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono:    ui-monospace, Consolas, monospace;
-
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  /* Force light colour-scheme so the browser never flips
-     scrollbars, form controls, or system colours to dark */
-  color-scheme: light;
-  color: var(--text);
-  background: var(--bg);
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  color: #111a35;
+  background: #eef1f7;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+  color-scheme: light;
+  font-size: 16px;
+  line-height: 1.5;
 }
-
-/* NO prefers-color-scheme: dark block — this file is intentionally
-   light-only. Dark-mode support can be added in a future task when
-   the full design system is ready. */
-
-/* ── Reset & base ── */
-*,
-*::before,
-*::after {
+* {
   box-sizing: border-box;
 }
-
 body {
   margin: 0;
-  /* Belt-and-suspenders: hard-pin background and text to light values
-     so the OS dark-mode media query cannot bleed through via the UA sheet. */
-  background: var(--bg);
-  color: var(--text);
 }
-
-#root {
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg);
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }
-
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid #7ca9ff;
+  outline-offset: 3px;
+}
+button {
+  border: 0;
+  background: none;
+  color: inherit;
+}
+input,
+select,
+textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #cdd2df;
+  border-radius: 10px;
+  padding: 13px 14px;
+  color: #17213b;
+  background: #fff;
+}
+input::placeholder,
+textarea::placeholder {
+  color: #9298aa;
+}
+input[type="number"] {
+  appearance: textfield;
+}
+input::-webkit-inner-spin-button,
+input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
 h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 600;
-  color: var(--text-h);
-}
-
+h2,
+h3,
 p {
   margin: 0;
 }
-
-code {
-  font-family: var(--mono);
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  border-radius: 4px;
-  background: var(--code-bg);
-  color: var(--text-h);
+h1,
+h2,
+h3 {
+  line-height: 1.2;
+  letter-spacing: -0.035em;
+}
+h1 {
+  font-size: 36px;
+  font-weight: 750;
+}
+h2 {
+  font-size: 23px;
+}
+small {
+  font-size: 13px;
+}
+svg {
+  flex-shrink: 0;
+}
+a {
+  color: inherit;
+}
+button {
+  touch-action: manipulation;
+}
+::selection {
+  background: #d4e3ff;
 }
