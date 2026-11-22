@@ -49,7 +49,7 @@ It contains eight models:
 | `Lot` | Morning and evening washing batches |
 | `Complaint` | Laundry complaints |
 | `ComplaintEvent` | Complaint response history |
-| `RegistrationInvite` | Staff-issued student registration invitations |
+| `RegistrationInvite` | Unused legacy invitation table |
 
 The two schemas are separate representations. The original five-table SQL schema has not been automatically converted into the Prisma schema.
 
@@ -65,7 +65,7 @@ The integrated Prisma schema defines these relationships:
 - One Order can have multiple Complaints.
 - One Complaint can have multiple ComplaintEvents.
 
-RegistrationInvite stores assigned student email and bag information before registration.
+RegistrationInvite is retained in migration history; its API and signup flow have been removed. Current orders submit total count only; OrderItem remains for legacy requests.
 
 ## 4. Order Status Workflow
 
@@ -152,3 +152,7 @@ The complete order lifecycle was verified in the `washtrack_demo` development da
 - Do not execute the original SQL scripts against the integrated Prisma database without reviewing their compatibility.
 - Do not run database reset commands against existing project databases.
 - The demo seed script creates fictional accounts and does not overwrite existing account passwords or orders.
+
+## Original SQL design: standalone setup
+
+For studying the original five-table design only, create a separate database (`CREATE DATABASE washtrack_db;`), connect with `\c washtrack_db`, then use `\i database/schema.sql` and `\i database/seed.sql` from psql at the project root. Use `\dt` to list tables. These demo seed password placeholders are not login credentials for the integrated app.

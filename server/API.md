@@ -2,28 +2,9 @@
 
 Base path: `/api`. All writes use `Content-Type: application/json`. Login sets an HttpOnly cookie. Browser clients call same-origin `/api` through Vite and use `credentials:'same-origin'`. API clients such as Postman should retain the cookie jar.
 
-All `:id` parameters use full UUIDs. Errors return `{ "message": "..." }`. No credentials or real invite codes are embedded in these examples.
+All `:id` parameters use full UUIDs. Errors return `{ "message": "..." }`. No credentials are embedded in these examples.
 
 ## Registration and authentication
-
-### Staff creates invitation
-
-`POST /api/registration-invites` (STAFF only)
-
-```json
-{"email":"new.student@example.edu","bagNo":"B-601"}
-```
-
-201 response shape:
-
-```json
-{
-  "invite":{"id":"<uuid>","email":"new.student@example.edu","bagNo":"B-601","expiresAt":"<ISO date>"},
-  "registrationCode":"<48-character code returned once>"
-}
-```
-
-Staff shares this code with the assigned student. It expires in 48 hours. Calling the endpoint again for the same unregistered email replaces the old code.
 
 ### Student registration
 
@@ -35,8 +16,7 @@ Staff shares this code with the assigned student. It expires in 48 hours. Callin
   "email":"new.student@example.edu",
   "bagNo":"B-601",
   "password":"<chosen password>",
-  "confirmPassword":"<same password>",
-  "registrationCode":"<code from staff>"
+  "confirmPassword":"<same password>"
 }
 ```
 
@@ -46,7 +26,7 @@ Staff shares this code with the assigned student. It expires in 48 hours. Callin
 {"user":{"id":"<uuid>","name":"Student Name","email":"new.student@example.edu","role":"STUDENT","bagNo":"B-601"},"message":"Account created. Sign in with your email and password."}
 ```
 
-Email is trimmed/lowercased; bag number is trimmed/uppercased. Role defaults to STUDENT on the server; STAFF requests fail. Invalid/expired/reused code or mismatched mapping: 400. Email/bag already registered: 409.
+Email is trimmed/lowercased; bag number is trimmed/uppercased. Role defaults to STUDENT on the server; STAFF requests fail. Invalid input: 400. No invitation code is required. Email/bag already registered: 409.
 
 ### Login
 
@@ -115,4 +95,4 @@ Staff cannot directly mark a complaint RESOLVED. Successful updates return `{"me
 
 400 invalid input/JSON/code; 401 missing, expired or revoked login; 403 wrong role or Origin; 404 missing/inaccessible record; 409 active-order, uniqueness or state conflict; 413 oversized body; 415 non-JSON write; 429 rate limit (Retry-After header); 500 generic server failure.
 
-UI should disable duplicate submissions, show the message on failure, and refresh after successful mutations. Do not redirect based on a role typed in the form. Use the role returned by login. Signup frontend and staff invite UI can use the examples above; the currently delivered frontend still has the existing sign-in screen.
+UI should disable duplicate submissions, show the message on failure, and refresh after successful mutations. Do not redirect based on a role typed in the form. Use the role returned by login. The signup frontend uses the public registration endpoint above.
